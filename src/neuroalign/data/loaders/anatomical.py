@@ -102,6 +102,11 @@ class TIVConfig:
             ]
         )
 
+    @property
+    def enabled(self) -> bool:
+        """Alias for is_available() for clearer API."""
+        return self.is_available()
+
 
 # Global parcellator for multiprocessing workers
 _WORKER_PARCELLATOR: Optional[VolumetricParcellator] = None
@@ -369,7 +374,8 @@ class AnatomicalLoader:
         return gm_volumes, wm_volumes, ct
 
     def load_session(
-        self, subject: str, session: str, include_metadata: bool = True, include_tiv: bool = True
+        self, subject: str, session: str, include_metadata: bool = True, include_tiv: bool = True,
+        tiv_output_dir: Path = None
     ) -> Optional[pd.DataFrame]:
         """Load all anatomical data for a single session."""
         cat12_dir = self.get_cat12_directory(subject, session)
@@ -393,13 +399,29 @@ class AnatomicalLoader:
         if not dfs:
             return None
 
+        df = pd.concat(dfs, ignore_index=True)
         if include_tiv:
             xml_file = _select_xml(cat12_dir, subject, session)
             if xml_file:
                 self._xml_files.append((subject, session, str(xml_file)))
-            # 
+                if not tiv_output_dir:
+                    import tempfile
 
-        return pd.concat(dfs, ignore_index=True)
+                    output_dir = Path(tempfile.mkdtemp(prefix="neuroalign_tiv_"))
+                else:
+                    output_dir = Path(tiv_output_dir)
+                tiv_df = self._calculate_tiv(output_dir)
+                if tiv_df is None or tiv_df.empty:
+                    logger.warning("TIV calculation failed - normalization skipped")
+                    return df
+
+                # Merge TIV into data
+                df = df.merge(
+                    tiv_df[["subject_code", "session_id", "tiv"]],
+                    on=["subject_code", "session_id"],
+                    how="left",
+                )
+        return df
 
     def load_sessions(
         self,
@@ -409,12 +431,13 @@ class AnatomicalLoader:
         include_qc: bool = True,
         normalize_by_tiv: bool = True,
         tiv_output_dir: Optional[Path] = None,
+        calculate_tiv: bool = True,
     ) -> pd.DataFrame:
         """
         Load anatomical data for multiple sessions.
 
         Uses multiprocessing for efficient parallel loading when n_jobs > 1.
-        Optionally normalizes volume measures by TIV.
+        Optionally calculates TIV and normalizes volume measures.
 
         Args:
             sessions_csv: Path to CSV with 'subject_code' and 'session_id' columns
@@ -423,6 +446,7 @@ class AnatomicalLoader:
             include_qc: Whether to include CAT12 quality measures
             normalize_by_tiv: Whether to normalize volumes by TIV (requires MATLAB)
             tiv_output_dir: Directory for TIV calculation files (uses temp if None)
+            calculate_tiv: Whether to calculate TIV (adds 'tiv' column even without normalization)
 
         Returns:
             DataFrame with all sessions' regional features
@@ -439,9 +463,9 @@ class AnatomicalLoader:
         else:
             df = self._load_sessions_parallel(sessions, n_jobs, progress, include_qc)
 
-        # Calculate and apply TIV normalization
-        if normalize_by_tiv:
-            df = self._apply_tiv_normalization(df, tiv_output_dir)
+        # Calculate TIV (always if calculate_tiv=True, normalize only if normalize_by_tiv=True)
+        if calculate_tiv or normalize_by_tiv:
+            df = self._apply_tiv(df, tiv_output_dir, normalize=normalize_by_tiv)
 
         return df
 
@@ -554,19 +578,29 @@ class AnatomicalLoader:
 
         return pd.concat(all_results, ignore_index=True)
 
-    def _apply_tiv_normalization(
+    def _apply_tiv(
         self,
         df: pd.DataFrame,
         output_dir: Optional[Path] = None,
+        normalize: bool = True,
     ) -> pd.DataFrame:
-        """Calculate TIV and normalize volume measures."""
+        """Calculate TIV and optionally normalize volume measures.
+
+        Args:
+            df: DataFrame with anatomical data
+            output_dir: Directory for TIV calculation files (uses temp if None)
+            normalize: Whether to normalize volumes by TIV (default: True)
+
+        Returns:
+            DataFrame with 'tiv' column added (and optionally normalized volumes)
+        """
         if not self._xml_files:
-            logger.warning("No XML files collected - TIV normalization skipped")
+            logger.warning("No XML files collected - TIV calculation skipped")
             return df
 
         if not self.tiv_config.is_available():
             logger.warning(
-                "MATLAB/CAT12 not configured - TIV normalization skipped. "
+                "MATLAB/CAT12 not configured - TIV calculation skipped. "
                 "Set MATLAB_BIN, SPM_PATH, CAT12_PATH, TIV_TEMPLATE in .env"
             )
             return df
@@ -581,7 +615,7 @@ class AnatomicalLoader:
         tiv_df = self._calculate_tiv(output_dir)
 
         if tiv_df is None or tiv_df.empty:
-            logger.warning("TIV calculation failed - normalization skipped")
+            logger.warning("TIV calculation failed")
             return df
 
         # Merge TIV into data
@@ -590,18 +624,17 @@ class AnatomicalLoader:
             on=["subject_code", "session_id"],
             how="left",
         )
+        logger.info(f"Added TIV column for {tiv_df['tiv'].notna().sum()} sessions")
 
-        # Normalize volume columns by TIV
-        # Volume columns are those with metric == "volume"
-        volume_mask = df["metric"] == "volume"
-        if volume_mask.any() and "tiv" in df.columns:
-            # Identify value column (volume_mm3 for volumes)
-            if "volume_mm3" in df.columns:
-                # Create normalized column
-                df.loc[volume_mask, "volume_mm3_normalized"] = (
-                    df.loc[volume_mask, "volume_mm3"] / df.loc[volume_mask, "tiv"]
-                )
-                logger.info(f"Normalized {volume_mask.sum()} volume measurements by TIV")
+        # Optionally normalize volume columns by TIV
+        if normalize:
+            volume_mask = df["metric"] == "volume"
+            if volume_mask.any() and "tiv" in df.columns:
+                if "volume_mm3" in df.columns:
+                    df.loc[volume_mask, "volume_mm3_normalized"] = (
+                        df.loc[volume_mask, "volume_mm3"] / df.loc[volume_mask, "tiv"]
+                    )
+                    logger.info(f"Normalized {volume_mask.sum()} volume measurements by TIV")
 
         return df
 
@@ -619,22 +652,26 @@ class AnatomicalLoader:
         filled_text = template_text.replace("$XMLS", xml_lines).replace("$OUT_FILE", str(tiv_out))
         filled_template.write_text(filled_text)
 
-        # Run MATLAB
-        cmd = " ".join(
-            [
-                str(self.tiv_config.matlab_bin),
-                "-nodisplay",
-                "-nosplash",
-                "-nodesktop",
-                "-r",
-                '"',
-                f"addpath('{self.tiv_config.spm_path}', '{self.tiv_config.cat12_path}');",
-                f"try, run('{filled_template}'); catch ME, disp(ME.message); end; exit;",
-                '"',
-            ]
+        # Build MATLAB command as a single string for -r option
+        spm = str(self.tiv_config.spm_path)
+        cat = str(self.tiv_config.cat12_path)
+        script = str(filled_template)
+        matlab_cmd = (
+            f"addpath('{spm}'); addpath('{cat}'); "
+            f"try, run('{script}'); catch ME, disp(ME.message); end; exit;"
         )
+
+        # Run MATLAB
+        cmd = [
+            str(self.tiv_config.matlab_bin),
+            "-nodisplay",
+            "-nosplash",
+            "-nodesktop",
+            "-r",
+            matlab_cmd,
+        ]
         logger.info("Running MATLAB for TIV calculation...")
-        result = subprocess.run(cmd, shell=True, capture_output=True, text=True)
+        result = subprocess.run(cmd, capture_output=True, text=True)
 
         if result.returncode != 0:
             logger.error(f"MATLAB TIV calculation failed: {result.stderr}")

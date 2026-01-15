@@ -550,12 +550,18 @@ class FeatureStore:
     # TIV storage
     # -------------------------------------------------------------------------
 
-    def save_tiv(self, df: pd.DataFrame) -> None:
+    def save_tiv(self, df: pd.DataFrame) -> str:
         """
         Save TIV (Total Intracranial Volume) data.
 
+        Saves TIV both as a standalone file (for load_tiv()) and as a
+        wide-format anatomical feature (for load_feature("tiv")).
+
         Args:
             df: DataFrame with subject_code, session_id, tiv columns
+
+        Returns:
+            Feature name ("tiv")
         """
         self._ensure_dirs()
         manifest = self._load_manifest()
@@ -567,12 +573,33 @@ class FeatureStore:
             raise ValueError(f"TIV DataFrame missing columns: {missing}")
 
         tiv_df = df[required].drop_duplicates()
+
+        # Save as standalone TIV file (backwards compatibility)
         tiv_df.to_parquet(self.tiv_path, compression=self.compression, index=False)
 
+        # Also save as wide-format anatomical feature
+        feat_name = "tiv"
+        feat_path = self.anatomical_wide_dir / f"{feat_name}.parquet"
+        tiv_df.to_parquet(feat_path, compression=self.compression, index=False)
+
+        # Register as a feature in manifest
+        info = FeatureInfo(
+            name=feat_name,
+            modality="anatomical",
+            metric="tiv",
+            n_regions=1,  # TIV is a single global measure
+            n_sessions=len(tiv_df),
+            region_names=["tiv"],
+            file_path=str(feat_path.relative_to(self.root_dir)),
+            created_at=datetime.now().isoformat(),
+            source_modality="global",
+        )
+        manifest.add_feature(info)
         manifest.has_tiv = True
         self._save_manifest()
 
         logger.info(f"Saved TIV for {len(tiv_df)} sessions")
+        return feat_name
 
     def load_tiv(self) -> pd.DataFrame:
         """Load TIV data."""

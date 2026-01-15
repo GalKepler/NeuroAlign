@@ -177,12 +177,14 @@ class DataPreparationPipeline:
 
         logger.info(f"Loading anatomical data (n_jobs={self.config.n_jobs})...")
         try:
-            # Load WITHOUT TIV normalization - we'll handle TIV separately
+            # Load with TIV calculation but WITHOUT normalization
+            # This adds 'tiv' column to the data without modifying volume values
             long_df = loader.load_sessions(
                 sessions_csv=csv_path,
                 n_jobs=self.config.n_jobs,
                 progress=self.config.progress,
                 normalize_by_tiv=False,  # Don't normalize - store raw values
+                calculate_tiv=True,  # But do calculate TIV and add to dataframe
             )
         except Exception as e:
             logger.error(f"Failed to load anatomical data: {e}")
@@ -424,11 +426,12 @@ class DataPreparationPipeline:
             raise ValueError("No data was saved - check your data paths")
 
         # =====================================================================
-        # Save TIV
+        # Save TIV (as both standalone file and anatomical feature)
         # =====================================================================
+        tiv_feature_name = None
         if tiv_df is not None and len(tiv_df) > 0:
             logger.info("Saving TIV data...")
-            store.save_tiv(tiv_df)
+            tiv_feature_name = store.save_tiv(tiv_df)
 
         # =====================================================================
         # Save metadata
@@ -442,6 +445,10 @@ class DataPreparationPipeline:
         # =====================================================================
         logger.info("Generating wide-format features...")
         wide_features = store.generate_wide_features()
+
+        # Include TIV in wide features list if it was saved
+        if tiv_feature_name and tiv_feature_name not in wide_features:
+            wide_features.append(tiv_feature_name)
 
         # Compute final metadata
         metadata = self._compute_metadata(store)
