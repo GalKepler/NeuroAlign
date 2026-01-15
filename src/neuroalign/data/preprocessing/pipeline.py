@@ -177,6 +177,9 @@ class DataPreparationPipeline:
 
         logger.info(f"Loading anatomical data (n_jobs={self.config.n_jobs})...")
         try:
+            # Use output directory for TIV files (easier to debug than temp)
+            tiv_work_dir = self.config.paths.output_dir / ".tiv_work"
+
             # Load with TIV calculation but WITHOUT normalization
             # This adds 'tiv' column to the data without modifying volume values
             long_df = loader.load_sessions(
@@ -185,6 +188,7 @@ class DataPreparationPipeline:
                 progress=self.config.progress,
                 normalize_by_tiv=False,  # Don't normalize - store raw values
                 calculate_tiv=True,  # But do calculate TIV and add to dataframe
+                tiv_output_dir=tiv_work_dir,  # Use known directory for debugging
             )
         except Exception as e:
             logger.error(f"Failed to load anatomical data: {e}")

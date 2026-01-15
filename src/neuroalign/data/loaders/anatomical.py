@@ -491,14 +491,15 @@ class AnatomicalLoader:
         for _, row in iterator:
             subject = row["subject_code"]
             session = row["session_id"]
-            session_data = self.load_session(subject=subject, session=session)
+            # Don't calculate TIV per-session - batch calculation happens in _apply_tiv()
+            session_data = self.load_session(subject=subject, session=session, include_tiv=False)
             if session_data is not None:
                 for col in sessions.columns:
                     if col not in session_data.columns:
                         session_data[col] = row[col]
                 results.append(session_data)
 
-                # Track XML file for TIV
+                # Track XML file for batch TIV calculation later
                 cat12_dir = self.get_cat12_directory(subject, session)
                 if cat12_dir:
                     xml_file = _select_xml(cat12_dir, subject, session)
@@ -594,6 +595,8 @@ class AnatomicalLoader:
         Returns:
             DataFrame with 'tiv' column added (and optionally normalized volumes)
         """
+        import tempfile
+
         if not self._xml_files:
             logger.warning("No XML files collected - TIV calculation skipped")
             return df
@@ -605,14 +608,16 @@ class AnatomicalLoader:
             )
             return df
 
-        # Calculate TIV
-        if output_dir is None:
-            import tempfile
-
-            output_dir = Path(tempfile.mkdtemp(prefix="neuroalign_tiv_"))
-
         logger.info(f"Calculating TIV for {len(self._xml_files)} sessions...")
-        tiv_df = self._calculate_tiv(output_dir)
+
+        # Use context manager for temp directory to ensure proper cleanup
+        if output_dir is None:
+            with tempfile.TemporaryDirectory(prefix="neuroalign_tiv_") as tmp_dir:
+                tiv_df = self._calculate_tiv(Path(tmp_dir))
+        else:
+            output_dir = Path(output_dir)
+            output_dir.mkdir(parents=True, exist_ok=True)
+            tiv_df = self._calculate_tiv(output_dir)
 
         if tiv_df is None or tiv_df.empty:
             logger.warning("TIV calculation failed")
@@ -670,14 +675,30 @@ class AnatomicalLoader:
             "-r",
             matlab_cmd,
         ]
-        logger.info("Running MATLAB for TIV calculation...")
+        logger.info(f"Running MATLAB for TIV calculation ({len(self._xml_files)} sessions)...")
+        logger.debug(f"MATLAB command: {' '.join(cmd)}")
+        logger.debug(f"TIV script: {filled_template}")
+
         result = subprocess.run(cmd, capture_output=True, text=True)
 
         if result.returncode != 0:
-            logger.error(f"MATLAB TIV calculation failed: {result.stderr}")
+            logger.error(f"MATLAB TIV calculation failed (returncode={result.returncode})")
+            logger.error(f"MATLAB stderr: {result.stderr}")
+
+        # Log stdout for debugging (may contain warnings)
+        if result.stdout:
+            # Check for warnings in output
+            if "Warning" in result.stdout or "Error" in result.stdout:
+                logger.warning(f"MATLAB output contains warnings/errors:\n{result.stdout}")
+            else:
+                logger.debug(f"MATLAB stdout: {result.stdout[:500]}...")
 
         if not tiv_out.exists():
             logger.error(f"TIV output file not created: {tiv_out}")
+            logger.error(f"Check MATLAB script at: {filled_template}")
+            logger.error(f"XML files being processed: {len(self._xml_files)}")
+            if self._xml_files:
+                logger.error(f"First XML: {self._xml_files[0][2]}")
             return None
 
         # Parse results
