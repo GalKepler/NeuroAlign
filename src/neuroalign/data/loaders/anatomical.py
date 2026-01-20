@@ -570,7 +570,9 @@ class AnatomicalLoader:
                 subject = row["subject_code"]
                 session = row["session_id"]
                 # Don't calculate TIV per-session - batch calculation happens in _apply_tiv()
-                session_data = self.load_session(subject=subject, session=session, include_tiv=False)
+                session_data = self.load_session(
+                    subject=subject, session=session, include_tiv=False
+                )
                 if session_data is not None:
                     for col in sessions.columns:
                         if col not in session_data.columns:
