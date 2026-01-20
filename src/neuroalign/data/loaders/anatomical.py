@@ -45,6 +45,32 @@ except ImportError:
 
 logger = logging.getLogger(__name__)
 
+# Session-scoped cache for filesystem glob operations
+# This avoids repeated filesystem scans for the same directory/pattern
+_GLOB_CACHE: Dict[Tuple[str, str], List[Path]] = {}
+
+
+def _cached_glob(directory: Path, pattern: str) -> List[Path]:
+    """
+    Cache glob results to avoid repeated filesystem scans.
+
+    Args:
+        directory: Directory to glob in
+        pattern: Glob pattern (e.g., "mwp1*.nii")
+
+    Returns:
+        List of matching paths (cached after first call)
+    """
+    key = (str(directory), pattern)
+    if key not in _GLOB_CACHE:
+        _GLOB_CACHE[key] = list(directory.glob(pattern))
+    return _GLOB_CACHE[key]
+
+
+def _clear_glob_cache() -> None:
+    """Clear the glob cache (call at end of batch operations)."""
+    _GLOB_CACHE.clear()
+
 
 @dataclass
 class AnatomicalPaths:
@@ -102,6 +128,11 @@ class TIVConfig:
             ]
         )
 
+    @property
+    def enabled(self) -> bool:
+        """Alias for is_available() for clearer API."""
+        return self.is_available()
+
 
 # Global parcellator for multiprocessing workers
 _WORKER_PARCELLATOR: Optional[VolumetricParcellator] = None
@@ -121,9 +152,10 @@ def _get_regional_volumes(
     """Load CAT12 probability maps and parcellate to regional measures."""
     assert _WORKER_PARCELLATOR is not None, "Parcellator not initialized in worker"
 
-    gm_prob = list(cat12_directory.glob("mwp1*.nii"))
-    wm_prob = list(cat12_directory.glob("mwp2*.nii"))
-    ct_prob = list(cat12_directory.glob("wct*.nii"))
+    # Use cached glob to avoid repeated filesystem scans
+    gm_prob = _cached_glob(cat12_directory, "mwp1*.nii")
+    wm_prob = _cached_glob(cat12_directory, "mwp2*.nii")
+    ct_prob = _cached_glob(cat12_directory, "wct*.nii")
 
     gm_volumes = _WORKER_PARCELLATOR.transform(gm_prob[0]) if gm_prob else None
     wm_volumes = _WORKER_PARCELLATOR.transform(wm_prob[0]) if wm_prob else None
@@ -208,7 +240,11 @@ def _process_session(
     session = row["session_id"]
     cat12_dir = cat12_root / f"sub-{subject}" / f"ses-{session}" / "anat"
 
+    logger.debug(f"Processing session: sub-{subject}_ses-{session}")
+    logger.debug(f"  CAT12 directory: {cat12_dir}")
+
     if not cat12_dir.exists():
+        logger.debug(f"  SKIP: CAT12 directory does not exist: {cat12_dir}")
         return {
             "status": "missing_cat12",
             "subject": subject,
@@ -217,6 +253,14 @@ def _process_session(
 
     gm_volumes, wm_volumes, ct = _get_regional_volumes(cat12_dir)
     if all(v is None for v in [gm_volumes, wm_volumes, ct]):
+        # Log what files were actually found
+        gm_files = list(cat12_dir.glob("mwp1*.nii"))
+        wm_files = list(cat12_dir.glob("mwp2*.nii"))
+        ct_files = list(cat12_dir.glob("wct*.nii"))
+        logger.debug(
+            f"  SKIP: No probability maps found in {cat12_dir}. "
+            f"GM files: {len(gm_files)}, WM files: {len(wm_files)}, CT files: {len(ct_files)}"
+        )
         return {
             "status": "missing_prob_maps",
             "subject": subject,
@@ -247,6 +291,12 @@ def _process_session(
         out["metric"] = "volume" if label in ("gm", "wm") else "thickness"
         payload[label] = out
 
+    logger.debug(
+        f"  SUCCESS: sub-{subject}_ses-{session} - "
+        f"GM: {'yes' if 'gm' in payload else 'no'}, "
+        f"WM: {'yes' if 'wm' in payload else 'no'}, "
+        f"CT: {'yes' if 'ct' in payload else 'no'}"
+    )
     return {
         "status": "success",
         "data": payload,
@@ -328,12 +378,25 @@ class AnatomicalLoader:
         for _, row in sessions.iterrows():
             subject = row["subject_code"]
             session = row["session_id"]
-            if isinstance(session, float) or isinstance(session, int):
+
+            # Skip rows with missing subject or session
+            if pd.isna(subject) or pd.isna(session):
+                logger.debug(f"Skipping row with missing subject/session: {subject}, {session}")
+                continue
+
+            # Handle numeric values that pandas may have converted
+            if isinstance(session, (float, int)):
                 session = str(int(session))
-            if isinstance(subject, float) or isinstance(subject, int):
+            else:
+                session = str(session)
+
+            if isinstance(subject, (float, int)):
                 subject = (
                     str(int(subject)).replace("_", "").replace("-", "").replace("\t", "").zfill(4)
                 )
+            else:
+                subject = str(subject)
+
             candidate_dir = self.paths.cat12_root / f"sub-{subject}" / f"ses-{session}" / "anat"
             gm_files = sorted(candidate_dir.glob("mwp1*.nii"))
             if gm_files:
@@ -352,15 +415,16 @@ class AnatomicalLoader:
         self, cat12_directory: Path
     ) -> Tuple[Optional[pd.DataFrame], Optional[pd.DataFrame], Optional[pd.DataFrame]]:
         """Extract regional volumes from CAT12 probability maps."""
-        if self.parcellator is None:
-            gm_example = list(cat12_directory.glob("mwp1*.nii"))
-            if not gm_example:
-                raise RuntimeError(f"No GM probability maps found in {cat12_directory}.")
-            self._init_parcellator(gm_example[0])
+        # Use cached glob to avoid repeated filesystem scans
+        gm_prob = _cached_glob(cat12_directory, "mwp1*.nii")
 
-        gm_prob = list(cat12_directory.glob("mwp1*.nii"))
-        wm_prob = list(cat12_directory.glob("mwp2*.nii"))
-        ct_prob = list(cat12_directory.glob("wct*.nii"))
+        if self.parcellator is None:
+            if not gm_prob:
+                raise RuntimeError(f"No GM probability maps found in {cat12_directory}.")
+            self._init_parcellator(gm_prob[0])
+
+        wm_prob = _cached_glob(cat12_directory, "mwp2*.nii")
+        ct_prob = _cached_glob(cat12_directory, "wct*.nii")
 
         gm_volumes = self.parcellator.transform(gm_prob[0]) if gm_prob else None
         wm_volumes = self.parcellator.transform(wm_prob[0]) if wm_prob else None
@@ -369,7 +433,12 @@ class AnatomicalLoader:
         return gm_volumes, wm_volumes, ct
 
     def load_session(
-        self, subject: str, session: str, include_metadata: bool = True, include_tiv: bool = True
+        self,
+        subject: str,
+        session: str,
+        include_metadata: bool = True,
+        include_tiv: bool = True,
+        tiv_output_dir: Path = None,
     ) -> Optional[pd.DataFrame]:
         """Load all anatomical data for a single session."""
         cat12_dir = self.get_cat12_directory(subject, session)
@@ -393,13 +462,29 @@ class AnatomicalLoader:
         if not dfs:
             return None
 
+        df = pd.concat(dfs, ignore_index=True, copy=False)
         if include_tiv:
             xml_file = _select_xml(cat12_dir, subject, session)
             if xml_file:
                 self._xml_files.append((subject, session, str(xml_file)))
-            # 
+                if not tiv_output_dir:
+                    import tempfile
 
-        return pd.concat(dfs, ignore_index=True)
+                    output_dir = Path(tempfile.mkdtemp(prefix="neuroalign_tiv_"))
+                else:
+                    output_dir = Path(tiv_output_dir)
+                tiv_df = self._calculate_tiv(output_dir)
+                if tiv_df is None or tiv_df.empty:
+                    logger.warning("TIV calculation failed - normalization skipped")
+                    return df
+
+                # Merge TIV into data
+                df = df.merge(
+                    tiv_df[["subject_code", "session_id", "tiv"]],
+                    on=["subject_code", "session_id"],
+                    how="left",
+                )
+        return df
 
     def load_sessions(
         self,
@@ -409,12 +494,13 @@ class AnatomicalLoader:
         include_qc: bool = True,
         normalize_by_tiv: bool = True,
         tiv_output_dir: Optional[Path] = None,
+        calculate_tiv: bool = True,
     ) -> pd.DataFrame:
         """
         Load anatomical data for multiple sessions.
 
         Uses multiprocessing for efficient parallel loading when n_jobs > 1.
-        Optionally normalizes volume measures by TIV.
+        Optionally calculates TIV and normalizes volume measures.
 
         Args:
             sessions_csv: Path to CSV with 'subject_code' and 'session_id' columns
@@ -423,6 +509,7 @@ class AnatomicalLoader:
             include_qc: Whether to include CAT12 quality measures
             normalize_by_tiv: Whether to normalize volumes by TIV (requires MATLAB)
             tiv_output_dir: Directory for TIV calculation files (uses temp if None)
+            calculate_tiv: Whether to calculate TIV (adds 'tiv' column even without normalization)
 
         Returns:
             DataFrame with all sessions' regional features
@@ -439,9 +526,9 @@ class AnatomicalLoader:
         else:
             df = self._load_sessions_parallel(sessions, n_jobs, progress, include_qc)
 
-        # Calculate and apply TIV normalization
-        if normalize_by_tiv:
-            df = self._apply_tiv_normalization(df, tiv_output_dir)
+        # Calculate TIV (always if calculate_tiv=True, normalize only if normalize_by_tiv=True)
+        if calculate_tiv or normalize_by_tiv:
+            df = self._apply_tiv(df, tiv_output_dir, normalize=normalize_by_tiv)
 
         return df
 
@@ -452,39 +539,44 @@ class AnatomicalLoader:
         include_qc: bool,
     ) -> pd.DataFrame:
         """Serial loading (original behavior)."""
-        results = []
-        self._xml_files = []
-        iterator = sessions.iterrows()
+        try:
+            results = []
+            self._xml_files = []
+            iterator = sessions.iterrows()
 
-        if progress:
-            try:
-                from tqdm import tqdm
+            if progress:
+                try:
+                    from tqdm import tqdm
 
-                iterator = tqdm(iterator, total=len(sessions), desc="Loading anatomical data")
-            except ImportError:
-                pass
+                    iterator = tqdm(iterator, total=len(sessions), desc="Loading anatomical data")
+                except ImportError:
+                    pass
 
-        for _, row in iterator:
-            subject = row["subject_code"]
-            session = row["session_id"]
-            session_data = self.load_session(subject=subject, session=session)
-            if session_data is not None:
-                for col in sessions.columns:
-                    if col not in session_data.columns:
-                        session_data[col] = row[col]
-                results.append(session_data)
+            for _, row in iterator:
+                subject = row["subject_code"]
+                session = row["session_id"]
+                # Don't calculate TIV per-session - batch calculation happens in _apply_tiv()
+                session_data = self.load_session(subject=subject, session=session, include_tiv=False)
+                if session_data is not None:
+                    for col in sessions.columns:
+                        if col not in session_data.columns:
+                            session_data[col] = row[col]
+                    results.append(session_data)
 
-                # Track XML file for TIV
-                cat12_dir = self.get_cat12_directory(subject, session)
-                if cat12_dir:
-                    xml_file = _select_xml(cat12_dir, subject, session)
-                    if xml_file:
-                        self._xml_files.append((subject, session, str(xml_file)))
+                    # Track XML file for batch TIV calculation later
+                    cat12_dir = self.get_cat12_directory(subject, session)
+                    if cat12_dir:
+                        xml_file = _select_xml(cat12_dir, subject, session)
+                        if xml_file:
+                            self._xml_files.append((subject, session, str(xml_file)))
 
-        if not results:
-            raise ValueError("No sessions successfully loaded")
+            if not results:
+                raise ValueError("No sessions successfully loaded")
 
-        return pd.concat(results, ignore_index=True)
+            return pd.concat(results, ignore_index=True, copy=False)
+        finally:
+            # Clear glob cache at end of batch operation
+            _clear_glob_cache()
 
     def _load_sessions_parallel(
         self,
@@ -494,94 +586,159 @@ class AnatomicalLoader:
         include_qc: bool,
     ) -> pd.DataFrame:
         """Parallel loading using ProcessPoolExecutor."""
-        warnings.filterwarnings("ignore")
+        try:
+            warnings.filterwarnings("ignore")
 
-        results_gm: List[pd.DataFrame] = []
-        results_wm: List[pd.DataFrame] = []
-        results_ct: List[pd.DataFrame] = []
-        self._xml_files = []
+            results_gm: List[pd.DataFrame] = []
+            results_wm: List[pd.DataFrame] = []
+            results_ct: List[pd.DataFrame] = []
+            self._xml_files = []
 
-        with ProcessPoolExecutor(
-            max_workers=n_jobs,
-            initializer=_init_worker,
-            initargs=(
-                str(self.paths.atlas_img),
-                str(self.paths.parcels_tsv),
-                str(self._example_file),
-            ),
-        ) as pool:
-            futures = [
-                pool.submit(
-                    _process_session,
-                    row.to_dict(),
-                    self.paths.cat12_root,
-                    include_qc,
-                )
-                for _, row in sessions.iterrows()
-            ]
+            # Track status counts for summary
+            status_counts: Dict[str, int] = {
+                "success": 0,
+                "missing_cat12": 0,
+                "missing_prob_maps": 0,
+                "error": 0,
+            }
+            failed_sessions: List[Tuple[str, str, str]] = []  # (subject, session, reason)
 
-            iterator = as_completed(futures)
-            if progress:
-                try:
-                    from tqdm import tqdm
+            logger.info(f"Loading anatomical data with {n_jobs} parallel workers")
+            logger.debug(f"Total sessions to process: {len(sessions)}")
 
-                    iterator = tqdm(
-                        iterator,
-                        total=len(futures),
-                        desc="Loading anatomical data",
+            with ProcessPoolExecutor(
+                max_workers=n_jobs,
+                initializer=_init_worker,
+                initargs=(
+                    str(self.paths.atlas_img),
+                    str(self.paths.parcels_tsv),
+                    str(self._example_file),
+                ),
+            ) as pool:
+                futures = [
+                    pool.submit(
+                        _process_session,
+                        row.to_dict(),
+                        self.paths.cat12_root,
+                        include_qc,
                     )
-                except ImportError:
-                    pass
+                    for _, row in sessions.iterrows()
+                ]
 
-            for fut in iterator:
-                res = fut.result()
-                status = res.get("status")
-                if status == "success":
-                    data = res["data"]
-                    if "gm" in data:
-                        results_gm.append(data["gm"])
-                    if "wm" in data:
-                        results_wm.append(data["wm"])
-                    if "ct" in data:
-                        results_ct.append(data["ct"])
-                    xml_path = res.get("xml")
-                    if xml_path:
-                        self._xml_files.append((res["subject"], res["session"], xml_path))
+                iterator = as_completed(futures)
+                if progress:
+                    try:
+                        from tqdm import tqdm
 
-        all_results = results_gm + results_wm + results_ct
-        if not all_results:
-            raise ValueError("No sessions successfully loaded")
+                        iterator = tqdm(
+                            iterator,
+                            total=len(futures),
+                            desc="Loading anatomical data",
+                        )
+                    except ImportError:
+                        pass
 
-        return pd.concat(all_results, ignore_index=True)
+                for fut in iterator:
+                    try:
+                        res = fut.result()
+                    except Exception as e:
+                        logger.error(f"Worker exception: {e}", exc_info=True)
+                        status_counts["error"] += 1
+                        continue
 
-    def _apply_tiv_normalization(
+                    status = res.get("status")
+                    status_counts[status] = status_counts.get(status, 0) + 1
+
+                    if status == "success":
+                        data = res["data"]
+                        if "gm" in data:
+                            results_gm.append(data["gm"])
+                        if "wm" in data:
+                            results_wm.append(data["wm"])
+                        if "ct" in data:
+                            results_ct.append(data["ct"])
+                        xml_path = res.get("xml")
+                        if xml_path:
+                            self._xml_files.append((res["subject"], res["session"], xml_path))
+                    else:
+                        # Track failed sessions for debugging
+                        failed_sessions.append(
+                            (res.get("subject", "?"), res.get("session", "?"), status)
+                        )
+
+            # Log summary of loading results
+            logger.info(
+                f"Anatomical loading complete: "
+                f"{status_counts['success']} success, "
+                f"{status_counts['missing_cat12']} missing CAT12, "
+                f"{status_counts['missing_prob_maps']} missing prob maps, "
+                f"{status_counts['error']} errors"
+            )
+
+            # Log details of failed sessions at debug level
+            if failed_sessions:
+                logger.debug(f"Failed sessions ({len(failed_sessions)} total):")
+                for subj, sess, reason in failed_sessions[:50]:  # Limit to first 50
+                    logger.debug(f"  sub-{subj}_ses-{sess}: {reason}")
+                if len(failed_sessions) > 50:
+                    logger.debug(f"  ... and {len(failed_sessions) - 50} more")
+
+            all_results = results_gm + results_wm + results_ct
+            if not all_results:
+                logger.error(
+                    f"No sessions successfully loaded. "
+                    f"Attempted {len(sessions)} sessions. "
+                    f"Status breakdown: {status_counts}"
+                )
+                raise ValueError("No sessions successfully loaded")
+
+            return pd.concat(all_results, ignore_index=True, copy=False)
+        finally:
+            # Clear glob cache at end of batch operation
+            _clear_glob_cache()
+
+    def _apply_tiv(
         self,
         df: pd.DataFrame,
         output_dir: Optional[Path] = None,
+        normalize: bool = True,
     ) -> pd.DataFrame:
-        """Calculate TIV and normalize volume measures."""
+        """Calculate TIV and optionally normalize volume measures.
+
+        Args:
+            df: DataFrame with anatomical data
+            output_dir: Directory for TIV calculation files (uses temp if None)
+            normalize: Whether to normalize volumes by TIV (default: True)
+
+        Returns:
+            DataFrame with 'tiv' column added (and optionally normalized volumes)
+        """
+        import tempfile
+
         if not self._xml_files:
-            logger.warning("No XML files collected - TIV normalization skipped")
+            logger.warning("No XML files collected - TIV calculation skipped")
             return df
 
         if not self.tiv_config.is_available():
             logger.warning(
-                "MATLAB/CAT12 not configured - TIV normalization skipped. "
+                "MATLAB/CAT12 not configured - TIV calculation skipped. "
                 "Set MATLAB_BIN, SPM_PATH, CAT12_PATH, TIV_TEMPLATE in .env"
             )
             return df
 
-        # Calculate TIV
-        if output_dir is None:
-            import tempfile
-
-            output_dir = Path(tempfile.mkdtemp(prefix="neuroalign_tiv_"))
-
         logger.info(f"Calculating TIV for {len(self._xml_files)} sessions...")
-        tiv_df = self._calculate_tiv(output_dir)
+
+        # Use context manager for temp directory to ensure proper cleanup
+        if output_dir is None:
+            with tempfile.TemporaryDirectory(prefix="neuroalign_tiv_") as tmp_dir:
+                tiv_df = self._calculate_tiv(Path(tmp_dir))
+        else:
+            output_dir = Path(output_dir)
+            output_dir.mkdir(parents=True, exist_ok=True)
+            tiv_df = self._calculate_tiv(output_dir)
 
         if tiv_df is None or tiv_df.empty:
-            logger.warning("TIV calculation failed - normalization skipped")
+            logger.warning("TIV calculation failed")
             return df
 
         # Merge TIV into data
@@ -590,18 +747,17 @@ class AnatomicalLoader:
             on=["subject_code", "session_id"],
             how="left",
         )
+        logger.info(f"Added TIV column for {tiv_df['tiv'].notna().sum()} sessions")
 
-        # Normalize volume columns by TIV
-        # Volume columns are those with metric == "volume"
-        volume_mask = df["metric"] == "volume"
-        if volume_mask.any() and "tiv" in df.columns:
-            # Identify value column (volume_mm3 for volumes)
-            if "volume_mm3" in df.columns:
-                # Create normalized column
-                df.loc[volume_mask, "volume_mm3_normalized"] = (
-                    df.loc[volume_mask, "volume_mm3"] / df.loc[volume_mask, "tiv"]
-                )
-                logger.info(f"Normalized {volume_mask.sum()} volume measurements by TIV")
+        # Optionally normalize volume columns by TIV
+        if normalize:
+            volume_mask = df["metric"] == "volume"
+            if volume_mask.any() and "tiv" in df.columns:
+                if "volume_mm3" in df.columns:
+                    df.loc[volume_mask, "volume_mm3_normalized"] = (
+                        df.loc[volume_mask, "volume_mm3"] / df.loc[volume_mask, "tiv"]
+                    )
+                    logger.info(f"Normalized {volume_mask.sum()} volume measurements by TIV")
 
         return df
 
@@ -610,8 +766,8 @@ class AnatomicalLoader:
         output_dir = Path(output_dir)
         output_dir.mkdir(parents=True, exist_ok=True)
 
-        tiv_out = output_dir / "TIV.txt"
-        filled_template = output_dir / "cat12_tiv.m"
+        tiv_out = (output_dir / "TIV.txt").resolve()
+        filled_template = (output_dir / "cat12_tiv.m").resolve()
 
         # Build MATLAB script
         xml_lines = "\n".join([f"'{xml_path}'" for _, _, xml_path in self._xml_files])
@@ -619,28 +775,48 @@ class AnatomicalLoader:
         filled_text = template_text.replace("$XMLS", xml_lines).replace("$OUT_FILE", str(tiv_out))
         filled_template.write_text(filled_text)
 
-        # Run MATLAB
-        cmd = " ".join(
-            [
-                str(self.tiv_config.matlab_bin),
-                "-nodisplay",
-                "-nosplash",
-                "-nodesktop",
-                "-r",
-                '"',
-                f"addpath('{self.tiv_config.spm_path}', '{self.tiv_config.cat12_path}');",
-                f"try, run('{filled_template}'); catch ME, disp(ME.message); end; exit;",
-                '"',
-            ]
+        # Build MATLAB command as a single string for -r option
+        spm = str(self.tiv_config.spm_path)
+        cat = str(self.tiv_config.cat12_path)
+        script = str(filled_template)
+        matlab_cmd = (
+            f"addpath('{spm}'); addpath('{cat}'); "
+            f"try, run('{script}'); catch ME, disp(ME.message); end; exit;"
         )
-        logger.info("Running MATLAB for TIV calculation...")
-        result = subprocess.run(cmd, shell=True, capture_output=True, text=True)
+
+        # Run MATLAB
+        cmd = [
+            str(self.tiv_config.matlab_bin),
+            "-nodisplay",
+            "-nosplash",
+            "-nodesktop",
+            "-r",
+            matlab_cmd,
+        ]
+        logger.info(f"Running MATLAB for TIV calculation ({len(self._xml_files)} sessions)...")
+        logger.debug(f"MATLAB command: {' '.join(cmd)}")
+        logger.debug(f"TIV script: {filled_template}")
+
+        result = subprocess.run(cmd, capture_output=True, text=True)
 
         if result.returncode != 0:
-            logger.error(f"MATLAB TIV calculation failed: {result.stderr}")
+            logger.error(f"MATLAB TIV calculation failed (returncode={result.returncode})")
+            logger.error(f"MATLAB stderr: {result.stderr}")
+
+        # Log stdout for debugging (may contain warnings)
+        if result.stdout:
+            # Check for warnings in output
+            if "Warning" in result.stdout or "Error" in result.stdout:
+                logger.warning(f"MATLAB output contains warnings/errors:\n{result.stdout}")
+            else:
+                logger.debug(f"MATLAB stdout: {result.stdout[:500]}...")
 
         if not tiv_out.exists():
             logger.error(f"TIV output file not created: {tiv_out}")
+            logger.error(f"Check MATLAB script at: {filled_template}")
+            logger.error(f"XML files being processed: {len(self._xml_files)}")
+            if self._xml_files:
+                logger.error(f"First XML: {self._xml_files[0][2]}")
             return None
 
         # Parse results

@@ -6,6 +6,7 @@ import argparse
 import logging
 import os
 import sys
+from datetime import datetime
 from pathlib import Path
 from typing import Optional
 
@@ -31,13 +32,69 @@ def _get_env_path(var_name: str) -> Optional[Path]:
     return None
 
 
-def setup_logging(verbose: bool = False) -> None:
-    """Configure logging."""
-    level = logging.DEBUG if verbose else logging.INFO
-    logging.basicConfig(
-        level=level,
-        format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-    )
+def setup_logging(verbose: bool = False, log_file: Optional[Path] = None) -> Optional[Path]:
+    """Configure logging with optional file output.
+
+    Args:
+        verbose: If True, console shows DEBUG level; otherwise INFO.
+        log_file: If provided, write detailed DEBUG logs to this file.
+                  If set to a directory, auto-generate timestamped filename.
+
+    Returns:
+        Path to the log file if file logging is enabled, None otherwise.
+    """
+    # Determine console level
+    console_level = logging.DEBUG if verbose else logging.INFO
+
+    # Format for all handlers
+    log_format = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+    date_format = "%Y-%m-%d %H:%M:%S"
+
+    # Configure root logger
+    root_logger = logging.getLogger()
+    root_logger.setLevel(logging.DEBUG)  # Capture all; handlers filter
+
+    # Clear any existing handlers
+    root_logger.handlers.clear()
+
+    # Console handler
+    console_handler = logging.StreamHandler(sys.stderr)
+    console_handler.setLevel(console_level)
+    console_handler.setFormatter(logging.Formatter(log_format, datefmt=date_format))
+    root_logger.addHandler(console_handler)
+
+    # File handler (if requested)
+    actual_log_path = None
+    if log_file is not None:
+        # If log_file is a directory, generate timestamped filename
+        if log_file.is_dir():
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            actual_log_path = log_file / f"neuroalign_prepare_{timestamp}.log"
+        else:
+            actual_log_path = log_file
+            # Ensure parent directory exists
+            actual_log_path.parent.mkdir(parents=True, exist_ok=True)
+
+        file_handler = logging.FileHandler(actual_log_path, mode="w", encoding="utf-8")
+        file_handler.setLevel(logging.DEBUG)  # Always capture DEBUG in file
+
+        # More detailed format for file (includes line numbers)
+        file_format = (
+            "%(asctime)s.%(msecs)03d - %(name)s - %(levelname)s - "
+            "%(filename)s:%(lineno)d - %(funcName)s - %(message)s"
+        )
+        file_handler.setFormatter(logging.Formatter(file_format, datefmt=date_format))
+        root_logger.addHandler(file_handler)
+
+        # Log startup info to file
+        logger = logging.getLogger(__name__)
+        logger.debug("=" * 80)
+        logger.debug("NEUROALIGN DATA PREPARATION LOG")
+        logger.debug(f"Started at: {datetime.now().isoformat()}")
+        logger.debug(f"Log file: {actual_log_path}")
+        logger.debug("=" * 80)
+
+    return actual_log_path
 
 
 def parse_args() -> argparse.Namespace:
@@ -186,6 +243,17 @@ Environment variables (loaded from .env):
         help="Verbose output",
     )
     parser.add_argument(
+        "--log-file",
+        "-l",
+        type=Path,
+        default=None,
+        help=(
+            "Write detailed DEBUG logs to this file. "
+            "If a directory is provided, auto-generates timestamped filename. "
+            "Log file always captures DEBUG level regardless of --verbose."
+        ),
+    )
+    parser.add_argument(
         "--no-progress",
         action="store_true",
         help="Disable progress bars",
@@ -240,9 +308,16 @@ def build_config(args: argparse.Namespace) -> PipelineConfig:
 def main() -> int:
     """Main CLI entry point."""
     args = parse_args()
-    setup_logging(args.verbose)
+    log_path = setup_logging(args.verbose, args.log_file)
 
     logger = logging.getLogger(__name__)
+
+    # Log configuration at startup (will appear in file if enabled)
+    if log_path:
+        print(f"Logging to: {log_path}")
+        logger.debug("CLI Arguments:")
+        for arg, value in vars(args).items():
+            logger.debug(f"  {arg}: {value}")
 
     # Validate required arguments
     if args.sessions is None:
@@ -253,6 +328,15 @@ def main() -> int:
 
     try:
         config = build_config(args)
+
+        # Log resolved configuration
+        logger.debug("Resolved Configuration:")
+        logger.debug(f"  Paths: {config.paths}")
+        logger.debug(f"  Modalities: {config.modalities}")
+        logger.debug(f"  Output: {config.output}")
+        logger.debug(f"  Atlas: {config.atlas_name}")
+        logger.debug(f"  N jobs: {config.n_jobs}")
+
         pipeline = DataPreparationPipeline(config)
         result = pipeline.run()
 
@@ -297,6 +381,10 @@ def main() -> int:
             if result.metadata["age_stats"]["missing"] > 0:
                 print(f"  Missing age: {result.metadata['age_stats']['missing']} sessions")
 
+        if log_path:
+            print()
+            print(f"Detailed log saved to: {log_path}")
+
         print()
         print("Usage example:")
         print("  from neuroalign.data.preprocessing import FeatureStore")
@@ -305,10 +393,14 @@ def main() -> int:
         print("  multi = store.load_features(['gm_volume', 'ct_thickness'])")
         print("=" * 60)
 
+        logger.debug("Pipeline completed successfully")
         return 0
 
     except Exception as e:
-        logger.error(f"Pipeline failed: {e}", exc_info=args.verbose)
+        # Always log full traceback to file, console depends on verbose
+        logger.error(f"Pipeline failed: {e}", exc_info=True)
+        if log_path:
+            print(f"\nPipeline failed. See detailed log at: {log_path}")
         return 1
 
 
