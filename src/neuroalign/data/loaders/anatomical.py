@@ -238,6 +238,20 @@ def _process_session(
     """Worker function: load CAT12 outputs for a single session."""
     subject = row["subject_code"]
     session = row["session_id"]
+
+    # Handle missing or NaN values
+    if pd.isna(subject) or pd.isna(session):
+        logger.debug(f"  SKIP: Missing subject ({subject}) or session ({session})")
+        return {
+            "status": "missing_identifiers",
+            "subject": str(subject),
+            "session": str(session),
+        }
+
+    # Ensure string types
+    subject = str(subject)
+    session = str(session)
+
     cat12_dir = cat12_root / f"sub-{subject}" / f"ses-{session}" / "anat"
 
     logger.debug(f"Processing session: sub-{subject}_ses-{session}")
@@ -599,6 +613,7 @@ class AnatomicalLoader:
                 "success": 0,
                 "missing_cat12": 0,
                 "missing_prob_maps": 0,
+                "missing_identifiers": 0,
                 "error": 0,
             }
             failed_sessions: List[Tuple[str, str, str]] = []  # (subject, session, reason)
@@ -672,6 +687,7 @@ class AnatomicalLoader:
                 f"{status_counts['success']} success, "
                 f"{status_counts['missing_cat12']} missing CAT12, "
                 f"{status_counts['missing_prob_maps']} missing prob maps, "
+                f"{status_counts['missing_identifiers']} missing IDs, "
                 f"{status_counts['error']} errors"
             )
 
