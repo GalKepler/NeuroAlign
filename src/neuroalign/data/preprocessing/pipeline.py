@@ -6,6 +6,7 @@ with long format (raw parcellator output) and wide format (per metric) files.
 """
 
 import logging
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Dict, List, Optional
@@ -13,6 +14,7 @@ from typing import Any, Dict, List, Optional
 import pandas as pd
 
 from neuroalign.data.loaders import AnatomicalLoader, DiffusionLoader
+
 from .config import PipelineConfig
 from .feature_store import FeatureStore
 
@@ -102,6 +104,7 @@ class DataPreparationPipeline:
             qsirecon_path=self.config.paths.qsirecon_path,
             workflows=self.config.modalities.diffusion_workflows,
             atlas_name=self.config.atlas_name,
+            n_jobs=self.config.n_jobs,
         )
 
     def _get_anatomical_modalities(self) -> List[str]:
@@ -218,11 +221,12 @@ class DataPreparationPipeline:
 
         csv_path = sessions_csv or self.config.paths.sessions_csv
 
-        logger.info("Loading diffusion data...")
+        logger.info(f"Loading diffusion data (n_jobs={self.config.n_jobs})...")
         try:
             long_df = loader.load_sessions(
                 sessions_csv=csv_path,
                 progress=self.config.progress,
+                n_jobs=self.config.n_jobs,
             )
         except Exception as e:
             logger.error(f"Failed to load diffusion data: {e}")
@@ -383,10 +387,40 @@ class DataPreparationPipeline:
         tiv_df = None
 
         # =====================================================================
-        # Load and save anatomical data (long format per modality)
+        # Load anatomical and diffusion data CONCURRENTLY
         # =====================================================================
-        anatomical_df = self.load_anatomical_data(sessions_csv=sessions_csv_path)
+        anatomical_df = None
+        diffusion_df = None
 
+        with ThreadPoolExecutor(max_workers=2) as executor:
+            futures = {}
+
+            if self.config.modalities.anatomical:
+                futures["anatomical"] = executor.submit(
+                    self.load_anatomical_data,
+                    sessions_csv_path,
+                )
+
+            if self.config.modalities.diffusion:
+                futures["diffusion"] = executor.submit(
+                    self.load_diffusion_data,
+                    sessions_csv_path,
+                )
+
+            # Collect results
+            for name, future in futures.items():
+                try:
+                    result = future.result()
+                    if name == "anatomical":
+                        anatomical_df = result
+                    else:
+                        diffusion_df = result
+                except Exception as e:
+                    logger.error(f"Failed to load {name} data: {e}")
+
+        # =====================================================================
+        # Save anatomical data (long format per modality)
+        # =====================================================================
         if anatomical_df is not None and len(anatomical_df) > 0:
             logger.info("Saving anatomical long format data...")
 
@@ -404,9 +438,8 @@ class DataPreparationPipeline:
                 long_formats_saved.append(name)
 
         # =====================================================================
-        # Load and save diffusion data (long format per workflow)
+        # Save diffusion data (long format per workflow)
         # =====================================================================
-        diffusion_df = self.load_diffusion_data(sessions_csv=sessions_csv_path)
 
         if diffusion_df is not None and len(diffusion_df) > 0:
             logger.info("Saving diffusion long format data...")

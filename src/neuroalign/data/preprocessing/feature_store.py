@@ -46,6 +46,21 @@ logger = logging.getLogger(__name__)
 
 # Regional summary columns from VolumetricParcellator
 ANATOMICAL_METRICS = ["volume_mm3", "mean", "std", "median", "sum", "robust_std", "mad_median"]
+# Diffusion summary columns from VolumetricParcellator (same parcellator, similar columns)
+DIFFUSION_METRICS = [
+    "mean",
+    "std",
+    "median",
+    "robust_mean",
+    "robust_std",
+    "mad_median",
+    "z_filtered_mean",
+    "z_filtered_std",
+    "iqr_filtered_mean",
+    "iqr_filtered_std",
+    "volume_mm3",
+    "voxel_count",
+]
 # Columns that identify the region (not metrics)
 REGION_ID_COLS = [
     "index",
@@ -370,8 +385,8 @@ class FeatureStore:
 
         df.to_parquet(file_path, compression=self.compression, index=False)
 
-        # Identify available metrics (params)
-        available_metrics = df["param"].unique().tolist() if "param" in df.columns else []
+        # Identify available summary statistics (mean, std, median, etc.)
+        available_metrics = [c for c in df.columns if c in DIFFUSION_METRICS]
 
         info = LongFormatInfo(
             name=name,
@@ -499,49 +514,62 @@ class FeatureStore:
                 df = self.load_long(long_name)
                 workflow = long_name.replace("diffusion_", "")
 
+                # Determine region column
+                region_col = "name" if "name" in df.columns else "label"
+                if region_col not in df.columns:
+                    for alt in ["label", "name", "region"]:
+                        if alt in df.columns:
+                            region_col = alt
+                            break
+
+                # Find available summary statistics in this diffusion data
+                available_metrics = [m for m in DIFFUSION_METRICS if m in df.columns]
+                if not available_metrics:
+                    logger.warning(f"No summary statistics found in {long_name}")
+                    continue
+
                 # Get unique model/param combinations
                 if "model" in df.columns and "param" in df.columns:
                     for (model, param), group in df.groupby(["model", "param"]):
-                        feat_name = f"{workflow}_{model}_{param}"
-                        feat_path = self.diffusion_wide_dir / f"{feat_name}.parquet"
+                        # Generate wide format for each available summary statistic
+                        for metric in available_metrics:
+                            if metric not in group.columns:
+                                continue
 
-                        # Find region and value columns
-                        region_col = "name" if "name" in group.columns else "label"
-                        value_col = "mean" if "mean" in group.columns else "Mean"
+                            # Feature name includes the summary statistic
+                            feat_name = f"{workflow}_{model}_{param}_{metric}"
+                            feat_path = self.diffusion_wide_dir / f"{feat_name}.parquet"
 
-                        if region_col not in group.columns or value_col not in group.columns:
-                            continue
+                            # Pivot to wide
+                            wide_df = group.pivot_table(
+                                index=["subject_code", "session_id"],
+                                columns=region_col,
+                                values=metric,
+                                aggfunc="first",
+                            ).reset_index()
+                            wide_df.columns.name = None
 
-                        # Pivot to wide
-                        wide_df = group.pivot_table(
-                            index=["subject_code", "session_id"],
-                            columns=region_col,
-                            values=value_col,
-                            aggfunc="first",
-                        ).reset_index()
-                        wide_df.columns.name = None
+                            wide_df.to_parquet(feat_path, compression=self.compression, index=False)
 
-                        wide_df.to_parquet(feat_path, compression=self.compression, index=False)
+                            region_cols = [c for c in wide_df.columns if c not in META_COLS]
 
-                        region_cols = [c for c in wide_df.columns if c not in META_COLS]
+                            info = FeatureInfo(
+                                name=feat_name,
+                                modality="diffusion",
+                                metric=metric,
+                                n_regions=len(region_cols),
+                                n_sessions=len(wide_df),
+                                region_names=region_cols,
+                                file_path=str(feat_path.relative_to(self.root_dir)),
+                                created_at=datetime.now().isoformat(),
+                                workflow=workflow,
+                                model=model,
+                                param=param,
+                            )
+                            manifest.add_feature(info)
+                            generated.append(feat_name)
 
-                        info = FeatureInfo(
-                            name=feat_name,
-                            modality="diffusion",
-                            metric=param,
-                            n_regions=len(region_cols),
-                            n_sessions=len(wide_df),
-                            region_names=region_cols,
-                            file_path=str(feat_path.relative_to(self.root_dir)),
-                            created_at=datetime.now().isoformat(),
-                            workflow=workflow,
-                            model=model,
-                            param=param,
-                        )
-                        manifest.add_feature(info)
-                        generated.append(feat_name)
-
-                        logger.info(f"Generated {feat_name}: {len(wide_df)} sessions")
+                            logger.info(f"Generated {feat_name}: {len(wide_df)} sessions")
 
         self._save_manifest()
         return generated
