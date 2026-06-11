@@ -3,7 +3,7 @@ Configuration models for the data preparation pipeline.
 """
 
 from pathlib import Path
-from typing import Optional, List
+from typing import List, Literal, Optional, Tuple
 
 from pydantic import BaseModel, Field
 
@@ -11,11 +11,10 @@ from pydantic import BaseModel, Field
 class DataPaths(BaseModel):
     """Paths configuration for data sources."""
 
-    sessions_csv: Path = Field(..., description="Path to sessions CSV with AGE column")
-    cat12_root: Optional[Path] = Field(None, description="CAT12 derivatives root")
-    atlas_root: Optional[Path] = Field(None, description="Atlas directory root")
-    qsiparc_path: Optional[Path] = Field(None, description="QSIParc derivatives path")
-    qsirecon_path: Optional[Path] = Field(None, description="QSIRecon derivatives path")
+    brainlink_db: Path = Field(..., description="Path to the brainlink SQLite DB")
+    tabular_derivatives_root: Path = Field(
+        ..., description="Root of the pre-parcellated tabular derivatives tree"
+    )
     output_dir: Path = Field(default=Path("data/processed"), description="Output directory")
 
 
@@ -24,14 +23,6 @@ class ModalityConfig(BaseModel):
 
     anatomical: bool = True
     diffusion: bool = True
-
-    # Anatomical sub-modalities
-    gray_matter: bool = True
-    white_matter: bool = True
-    cortical_thickness: bool = True
-
-    # Diffusion workflows (None = all available)
-    diffusion_workflows: Optional[List[str]] = None
 
 
 class OutputConfig(BaseModel):
@@ -47,8 +38,9 @@ class PipelineConfig(BaseModel):
     paths: DataPaths
     modalities: ModalityConfig = Field(default_factory=ModalityConfig)
     output: OutputConfig = Field(default_factory=OutputConfig)
-    atlas_name: str = "4S456Parcels"
-    age_column: str = "AGE"  # Column name for age in sessions CSV
-    n_jobs: int = 1  # Number of parallel workers (1 = serial)
-    progress: bool = True
+    atlas_name: str = "Schaefer2018N400n7Tian2020S2"
+    anat_atlases: Tuple[str, str] = ("Schaefer2018N400n7", "Tian2020S2")
+    session_variant: Literal["cross", "plain", "subject"] = "cross"
+    labs: Optional[List[str]] = Field(None, description="Restrict to these brainlink labs")
+    require_complete_mapping: bool = True
     force: bool = False  # If False, skip sessions already in the store
