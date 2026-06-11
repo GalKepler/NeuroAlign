@@ -1,0 +1,12 @@
+{
+  "normalize": true,
+  "impute_strategy": "mean",
+  "compute_umap": true,
+  "umap_n_components": 2,
+  "umap_n_neighbors": 15,
+  "umap_min_dist": 0.1,
+  "umap_metric": "euclidean",
+  "random_state": 42,
+  "subject_col": "subject_code",
+  "session_col": "session_id"
+}

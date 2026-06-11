@@ -1,0 +1,13 @@
+```json
+{
+  "narrative": "It's fascinating to look at your NeuroAlign results and see who your 'brain twins' are – individuals whose brains appear to be aging in remarkably similar regional patterns to your own. While we don't have questionnaire data for all your closest twins, the profiles we do have paint an interesting picture, inviting us to ponder what might connect these unique brain patterns.\n\nAcross your identified brain twin group, a few patterns stand out. Like you, all your twins with available data are right-handed, non-smokers, and none report having children. It's also striking that none of these individuals, including yourself, have reported clinical diagnoses of depression or anxiety. The group, much like you, tends to lead active lifestyles, engaging in various forms of exercise. While the average age of your twins is a bit younger than yours, you fit comfortably within the group's age range, and many share a similar academic background and preference for urban living.\n\nInterestingly, all your identified brain twins with available data are male. This highlights how similarities in regional brain aging patterns can emerge even across different demographic groups, suggesting that brain health trajectories might connect people in unexpected ways. We also observe that your reported anxiety symptoms and sleep quality are notably low (indicating better well-being) compared to the group's average, which is a unique aspect of your profile within this cluster. These shared characteristics and subtle differences offer intriguing possibilities for further scientific exploration, inviting you to reflect on your own unique brain journey.",
+  "key_shared_traits": [
+    "All identified twins are right-handed, just like you.",
+    "A strong commonality is that none of your brain twins, nor you, report being smokers.",
+    "Across the group, including yourself, there are no reported clinical diagnoses of depression or anxiety.",
+    "None of the identified brain twins, nor you, report having children.",
+    "The group, including you, tends to engage in regular physical exercise, indicating active lifestyles."
+  ],
+  "cluster_profile": "This cluster primarily consists of right-handed, non-smoking individuals who are active, do not have children, and show no clinical diagnoses of depression or anxiety, with a predominant leaning towards younger ages and urban living."
+}
+```
