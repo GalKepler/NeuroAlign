@@ -17,9 +17,9 @@ from scipy.stats import pearsonr
 from sklearn.linear_model import Ridge
 from sklearn.metrics import mean_absolute_error, r2_score
 from sklearn.model_selection import GroupKFold, LeaveOneGroupOut
-from sklearn.neighbors import KernelDensity
 from sklearn.preprocessing import PolynomialFeatures
 
+from neuroalign.modeling._shared import apply_bias_correction, compute_ipw_weights
 from neuroalign.modeling.config import BAGConfig
 from neuroalign.modeling.result import BAGResult
 
@@ -32,34 +32,6 @@ logger = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------
 # Private helpers
 # ---------------------------------------------------------------------------
-
-
-def _compute_ipw_weights(ages: np.ndarray, bandwidth: float) -> np.ndarray:
-    """KDE-based inverse probability weights normalised to mean 1."""
-    logger.debug("Computing IPW weights with bandwidth=%.2f", bandwidth)
-    kde = KernelDensity(bandwidth=bandwidth).fit(ages.reshape(-1, 1))
-    log_density = kde.score_samples(ages.reshape(-1, 1))
-    density = np.exp(log_density)
-    weights = 1.0 / density
-    weights /= weights.mean()
-    return weights
-
-
-def _apply_bias_correction(bag_df: pd.DataFrame, ages: np.ndarray) -> pd.DataFrame:
-    """De Lange & Cole post-hoc linear bias correction per region.
-
-    For each region column, fits ``BAG = alpha * age + beta`` and subtracts the
-    fitted values so that the corrected BAG is uncorrelated with age.
-    """
-    logger.debug("Applying linear bias correction to %d regions.", len(bag_df.columns))
-    corrected = bag_df.copy()
-    for col in bag_df.columns:
-        bag_vals = bag_df[col].values
-        # OLS: bag = alpha * age + beta
-        A = np.column_stack([ages, np.ones_like(ages)])
-        coeffs, *_ = np.linalg.lstsq(A, bag_vals, rcond=None)
-        corrected[col] = bag_vals - (coeffs[0] * ages + coeffs[1])
-    return corrected
 
 
 def _build_model(config: BAGConfig) -> RegressorMixin:
@@ -227,7 +199,7 @@ class RegionalBAGEstimator:
 
             # IPW weights on training set
             if cfg.ipw:
-                weights = _compute_ipw_weights(train_ages, cfg.ipw_bandwidth)
+                weights = compute_ipw_weights(train_ages, cfg.ipw_bandwidth)
             else:
                 weights = None
 
@@ -275,7 +247,7 @@ class RegionalBAGEstimator:
         # --- 6. Bias correction ---
         if cfg.bias_correction:
             logger.info("Applying bias correction.")
-            bag_corrected_vals = _apply_bias_correction(
+            bag_corrected_vals = apply_bias_correction(
                 pd.DataFrame(bag_uncorrected_vals, columns=regions), ages
             )
             bag = bag_corrected_vals.copy()
