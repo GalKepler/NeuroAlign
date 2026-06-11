@@ -29,6 +29,8 @@ from typing import Literal, Optional, Tuple
 
 import pandas as pd
 
+from neuroalign.data.loaders.diffusion import parse_bids_entities
+
 logger = logging.getLogger(__name__)
 
 _STRUCTURE_RE = re.compile(r"structure-([A-Za-z0-9]+)")
@@ -140,6 +142,62 @@ class TabularDerivativesLoader:
 
         return pd.concat(frames, ignore_index=True)
 
+    def _dwi_atlas_dir(self, uid: str, session_id: str) -> Optional[Path]:
+        """Resolve the `dwi/atlas-<atlas_name>` directory for a session.
+
+        Diffusion derivatives only exist under `ses-<id>/` (not `.cross/`),
+        so this checks both regardless of `session_variant` (except that
+        ``"plain"`` is tried first when requested).
+        """
+        sub_dir = self.root / f"sub-{uid}"
+        cross_dwi = sub_dir / f"ses-{session_id}.cross" / "dwi" / f"atlas-{self.atlas_name}"
+        plain_dwi = sub_dir / f"ses-{session_id}" / "dwi" / f"atlas-{self.atlas_name}"
+        preferred, fallback = (
+            (plain_dwi, cross_dwi) if self.session_variant == "plain" else (cross_dwi, plain_dwi)
+        )
+        if preferred.exists():
+            return preferred
+        if fallback.exists():
+            return fallback
+        return None
+
     def load_diffusion(self, sessions: pd.DataFrame) -> pd.DataFrame:
-        """Load long-format diffusion data for the given sessions. (Phase 3, not yet implemented)"""
-        raise NotImplementedError("load_diffusion is implemented in Phase 3")
+        """Load long-format diffusion data for the given sessions.
+
+        Args:
+            sessions: DataFrame with `uid` and `session_id` columns
+                (e.g. from `BehavioralLoader.get_sessions()`).
+
+        Returns:
+            Long-format DataFrame: `uid`, `session_id`, `atlas`, `software`,
+            `model`, `param`, `desc`, `index`, `label`, `hemisphere`, plus the
+            per-region metric columns (`mean`, `std`, `median`, ..., `scalar`).
+            One row per (session, software/model/param/desc, region).
+        """
+        frames = []
+        for uid, session_id in (
+            sessions[["uid", "session_id"]].drop_duplicates().itertuples(index=False)
+        ):
+            dwi_dir = self._dwi_atlas_dir(uid, session_id)
+            if dwi_dir is None:
+                logger.debug(
+                    "missing dwi atlas %s for sub-%s ses-%s", self.atlas_name, uid, session_id
+                )
+                continue
+
+            for tsv_file in sorted(dwi_dir.glob("*_diffmap.tsv")):
+                entities = parse_bids_entities(tsv_file.name)
+                df = pd.read_csv(tsv_file, sep="\t")
+                df.insert(0, "session_id", session_id)
+                df.insert(0, "uid", uid)
+                df["atlas"] = self.atlas_name
+                df["software"] = entities.get("software")
+                df["model"] = entities.get("model")
+                df["param"] = entities.get("param")
+                df["desc"] = entities.get("desc")
+                frames.append(df)
+
+        if not frames:
+            return pd.DataFrame()
+
+        return pd.concat(frames, ignore_index=True)
