@@ -2,24 +2,24 @@
 Feature Store for NeuroAlign regional brain features.
 
 Organizes features in two formats:
-1. Long format (raw) - Preserves all parcellator output columns
-2. Wide format - One file per metric for easy modeling access
+1. Long format (raw) - Preserves all `TabularDerivativesLoader` output columns
+2. Wide format - One file per metric/combination for easy modeling access
 
 Structure:
     data/processed/
     ├── long/
-    │   ├── anatomical_gm.parquet
-    │   ├── anatomical_wm.parquet
-    │   ├── anatomical_ct.parquet
+    │   ├── anatomical.parquet              # Schaefer2018N400n7 + Tian2020S2, long format
     │   └── diffusion/
+    │       ├── DSIStudio.parquet
     │       ├── AMICONODDI.parquet
     │       └── ...
     ├── wide/
     │   ├── anatomical/
-    │   │   ├── gm_volume_mm3.parquet
-    │   │   ├── gm_mean.parquet
+    │   │   ├── anat_thickness_mean_mm.parquet
+    │   │   ├── anat_volume_mm3.parquet
     │   │   └── ...
     │   └── diffusion/
+    │       ├── DSIStudio_tensor_fa_mean.parquet
     │       └── ...
     ├── tiv.parquet
     ├── metadata.parquet
@@ -28,9 +28,9 @@ Structure:
 Example:
     >>> store = FeatureStore("data/processed")
     >>> store.list_features()
-    ['gm_volume_mm3', 'gm_mean', 'ct_mean', ...]
-    >>> gm_vol = store.load_feature("gm_volume_mm3")
-    >>> gm_long = store.load_long("anatomical_gm")
+    ['anat_thickness_mean_mm', 'DSIStudio_tensor_fa_mean', ...]
+    >>> fa = store.load_feature("DSIStudio_tensor_fa_mean")
+    >>> anat_long = store.load_long("anatomical")
 """
 
 import json
@@ -38,62 +38,90 @@ import logging
 from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List, Literal, Optional, Union
+from typing import Any, Dict, List, Optional, Union
 
 import pandas as pd
 
 logger = logging.getLogger(__name__)
 
-# Regional summary columns from VolumetricParcellator
-ANATOMICAL_METRICS = ["volume_mm3", "mean", "std", "median", "sum", "robust_std", "mad_median"]
-# Diffusion summary columns from VolumetricParcellator (same parcellator, similar columns)
+# Anatomical metric columns (Schaefer2018N400n7 cortex + Tian2020S2 subcortex,
+# concatenated by TabularDerivativesLoader.load_anatomical). Cortex and
+# subcortex regions only populate their own metrics - the rest are NaN.
+ANATOMICAL_METRICS = [
+    # cortex (surface-based, Schaefer2018N400n7)
+    "num_vertices",
+    "surface_area_mm2",
+    "gray_matter_volume_mm3",
+    "thickness_mean_mm",
+    "thickness_std_mm",
+    "mean_curvature",
+    "gaussian_curvature",
+    "folding_index",
+    "curvature_index",
+    "white_surf_area_mm2",
+    "brain_seg_vol_mm3",
+    "brain_seg_no_vent_mm3",
+    "cortex_vol_mm3",
+    "supratentorial_vol_mm3",
+    # subcortex (volume-based, Tian2020S2)
+    "num_voxels",
+    "volume_mm3",
+    "intensity_mean",
+    "intensity_std",
+    "intensity_min",
+    "intensity_max",
+    "intensity_range",
+    "intensity_snr",
+    "subcort_gray_mm3",
+]
+
+# Diffusion metric columns, generated per (software, model, param, desc) combo
 DIFFUSION_METRICS = [
     "mean",
     "std",
     "median",
+    "sum",
+    "cv",
     "robust_mean",
     "robust_std",
+    "robust_cv",
     "mad_median",
     "z_filtered_mean",
     "z_filtered_std",
     "iqr_filtered_mean",
     "iqr_filtered_std",
+    "skewness",
+    "excess_kurtosis",
+    "percentile_5",
+    "percentile_25",
+    "percentile_75",
+    "percentile_95",
+    "coverage",
     "volume_mm3",
     "voxel_count",
 ]
-# Columns that identify the region (not metrics)
-REGION_ID_COLS = [
-    "index",
-    "label",
-    "network_label",
-    "label_7network",
-    "index_17network",
-    "label_17network",
-    "network_label_17network",
-    "atlas_name",
-    "network_id",
-]
-# Metadata columns
-META_COLS = ["subject_code", "session_id"]
+
+# Columns identifying a session - the join key across all stored tables
+META_COLS = ["uid", "session_id"]
 
 
 @dataclass
 class FeatureInfo:
-    """Information about a stored feature."""
+    """Information about a stored wide-format feature."""
 
     name: str
     modality: str  # "anatomical" or "diffusion"
-    metric: str  # e.g., "volume_mm3", "mean", "ICVF"
+    metric: str  # e.g., "thickness_mean_mm", "mean"
     n_regions: int
     n_sessions: int
     region_names: List[str]
     file_path: str
     created_at: str
-    # Additional metadata
-    source_modality: Optional[str] = None  # gm, wm, ct
-    workflow: Optional[str] = None  # For diffusion
+    # Diffusion-only identifiers
+    software: Optional[str] = None
     model: Optional[str] = None
     param: Optional[str] = None
+    desc: Optional[str] = None
 
     def to_dict(self) -> Dict[str, Any]:
         return {
@@ -105,10 +133,10 @@ class FeatureInfo:
             "region_names": self.region_names,
             "file_path": self.file_path,
             "created_at": self.created_at,
-            "source_modality": self.source_modality,
-            "workflow": self.workflow,
+            "software": self.software,
             "model": self.model,
             "param": self.param,
+            "desc": self.desc,
         }
 
     @classmethod
@@ -124,6 +152,7 @@ class LongFormatInfo:
     modality: str
     n_rows: int
     n_sessions: int
+    n_subjects: int
     columns: List[str]
     metrics_available: List[str]
     file_path: str
@@ -135,6 +164,7 @@ class LongFormatInfo:
             "modality": self.modality,
             "n_rows": self.n_rows,
             "n_sessions": self.n_sessions,
+            "n_subjects": self.n_subjects,
             "columns": self.columns,
             "metrics_available": self.metrics_available,
             "file_path": self.file_path,
@@ -150,7 +180,7 @@ class LongFormatInfo:
 class StoreManifest:
     """Manifest describing all data in the store."""
 
-    version: str = "2.0"
+    version: str = "3.0"
     created_at: str = field(default_factory=lambda: datetime.now().isoformat())
     updated_at: str = field(default_factory=lambda: datetime.now().isoformat())
     atlas_name: str = ""
@@ -194,7 +224,7 @@ class StoreManifest:
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> "StoreManifest":
         return cls(
-            version=data.get("version", "2.0"),
+            version=data.get("version", "3.0"),
             created_at=data.get("created_at", ""),
             updated_at=data.get("updated_at", ""),
             atlas_name=data.get("atlas_name", ""),
@@ -211,10 +241,12 @@ class FeatureStore:
     Storage and retrieval system for regional brain features.
 
     Supports two data formats:
-    - Long format: Raw parcellator output with all columns preserved
-    - Wide format: One file per metric for efficient modeling
+    - Long format: Raw `TabularDerivativesLoader` output, all columns preserved
+    - Wide format: One file per metric (anatomical) or per
+      (software, model, param[, desc], metric) combination (diffusion)
 
-    Also stores TIV (Total Intracranial Volume) separately for normalization.
+    Also stores TIV (Total Intracranial Volume, `tiv_mm3`) separately for
+    normalization - extracted directly from the anatomical long format.
     """
 
     def __init__(
@@ -304,127 +336,115 @@ class FeatureStore:
         return self.manifest_path.exists()
 
     # -------------------------------------------------------------------------
-    # Long format storage (raw parcellator output)
+    # Long format storage (raw TabularDerivativesLoader output)
     # -------------------------------------------------------------------------
 
-    def save_anatomical_long(
-        self,
-        df: pd.DataFrame,
-        modality: Literal["gm", "wm", "ct"],
-        atlas_name: str = "",
-    ) -> str:
+    def save_anatomical_long(self, df: pd.DataFrame, atlas_name: str = "") -> str:
         """
-        Save raw anatomical parcellator output in long format.
-
-        Preserves ALL columns from the parcellator (volume, mean, std, etc.).
+        Save long-format anatomical data (`TabularDerivativesLoader.load_anatomical`).
 
         Args:
-            df: Long-format DataFrame from AnatomicalLoader/parcellator
-            modality: Source modality (gm, wm, ct)
-            atlas_name: Name of atlas used
+            df: Long-format DataFrame with `uid`, `session_id`, `label`,
+                `structure`, `tiv_mm3`, and per-region metric columns.
+            atlas_name: Name of the combined atlas (e.g. "Schaefer2018N400n7Tian2020S2").
 
         Returns:
-            Name of saved long format file
+            Name of the saved long format file ("anatomical").
         """
         self._ensure_dirs()
         manifest = self._load_manifest()
         if atlas_name:
             manifest.atlas_name = atlas_name
 
-        name = f"anatomical_{modality}"
+        name = "anatomical"
         file_path = self.long_dir / f"{name}.parquet"
-
         df.to_parquet(file_path, compression=self.compression, index=False)
 
-        # Identify available metrics
         available_metrics = [c for c in df.columns if c in ANATOMICAL_METRICS]
 
         info = LongFormatInfo(
             name=name,
             modality="anatomical",
             n_rows=len(df),
-            n_sessions=df[["subject_code", "session_id"]].drop_duplicates().shape[0],
+            n_sessions=df[META_COLS].drop_duplicates().shape[0],
+            n_subjects=df["uid"].nunique(),
             columns=df.columns.tolist(),
             metrics_available=available_metrics,
             file_path=str(file_path.relative_to(self.root_dir)),
             created_at=datetime.now().isoformat(),
         )
         manifest.add_long_format(info)
-
-        # Update session counts
-        n_sessions = df[["subject_code", "session_id"]].drop_duplicates().shape[0]
-        n_subjects = df["subject_code"].nunique()
-        manifest.n_sessions = max(manifest.n_sessions, n_sessions)
-        manifest.n_subjects = max(manifest.n_subjects, n_subjects)
+        manifest.n_sessions = max(manifest.n_sessions, info.n_sessions)
+        manifest.n_subjects = max(manifest.n_subjects, info.n_subjects)
 
         self._save_manifest()
         logger.info(f"Saved {name}: {info.n_rows} rows, {info.n_sessions} sessions")
 
         return name
 
-    def save_diffusion_long(
-        self,
-        df: pd.DataFrame,
-        workflow: str,
-    ) -> str:
+    def save_diffusion_long(self, df: pd.DataFrame, atlas_name: str = "") -> List[str]:
         """
-        Save raw diffusion parcellator output in long format.
+        Save long-format diffusion data (`TabularDerivativesLoader.load_diffusion`),
+        split into one file per `software`.
 
         Args:
-            df: Long-format DataFrame from DiffusionLoader
-            workflow: Workflow name (e.g., "AMICONODDI", "DSIStudio")
+            df: Long-format DataFrame with `uid`, `session_id`, `label`,
+                `software`, `model`, `param`, `desc`, and per-region metric columns.
+            atlas_name: Name of the combined atlas (e.g. "Schaefer2018N400n7Tian2020S2").
 
         Returns:
-            Name of saved long format file
+            Names of the saved long format files (one per `software`).
         """
         self._ensure_dirs()
         manifest = self._load_manifest()
+        if atlas_name:
+            manifest.atlas_name = atlas_name
 
-        name = f"diffusion_{workflow}"
-        file_path = self.diffusion_long_dir / f"{workflow}.parquet"
-
-        df.to_parquet(file_path, compression=self.compression, index=False)
-
-        # Identify available summary statistics (mean, std, median, etc.)
         available_metrics = [c for c in df.columns if c in DIFFUSION_METRICS]
+        names = []
 
-        info = LongFormatInfo(
-            name=name,
-            modality="diffusion",
-            n_rows=len(df),
-            n_sessions=df[["subject_code", "session_id"]].drop_duplicates().shape[0],
-            columns=df.columns.tolist(),
-            metrics_available=available_metrics,
-            file_path=str(file_path.relative_to(self.root_dir)),
-            created_at=datetime.now().isoformat(),
-        )
-        manifest.add_long_format(info)
+        for software, sw_df in df.groupby("software"):
+            name = f"diffusion_{software}"
+            file_path = self.diffusion_long_dir / f"{software}.parquet"
+            sw_df.to_parquet(file_path, compression=self.compression, index=False)
 
-        n_sessions = df[["subject_code", "session_id"]].drop_duplicates().shape[0]
-        n_subjects = df["subject_code"].nunique()
-        manifest.n_sessions = max(manifest.n_sessions, n_sessions)
-        manifest.n_subjects = max(manifest.n_subjects, n_subjects)
+            info = LongFormatInfo(
+                name=name,
+                modality="diffusion",
+                n_rows=len(sw_df),
+                n_sessions=sw_df[META_COLS].drop_duplicates().shape[0],
+                n_subjects=sw_df["uid"].nunique(),
+                columns=sw_df.columns.tolist(),
+                metrics_available=available_metrics,
+                file_path=str(file_path.relative_to(self.root_dir)),
+                created_at=datetime.now().isoformat(),
+            )
+            manifest.add_long_format(info)
+            manifest.n_sessions = max(manifest.n_sessions, info.n_sessions)
+            manifest.n_subjects = max(manifest.n_subjects, info.n_subjects)
+            names.append(name)
+            logger.info(f"Saved {name}: {info.n_rows} rows, {info.n_sessions} sessions")
 
         self._save_manifest()
-        logger.info(f"Saved {name}: {info.n_rows} rows, {info.n_sessions} sessions")
-
-        return name
+        return names
 
     def load_long(self, name: str) -> pd.DataFrame:
         """
         Load long-format data.
 
         Args:
-            name: Long format name (e.g., "anatomical_gm", "diffusion_AMICONODDI")
+            name: Long format name (e.g., "anatomical", "diffusion_DSIStudio")
 
         Returns:
-            DataFrame with all parcellator columns
+            DataFrame with all `TabularDerivativesLoader` columns
         """
         manifest = self._load_manifest()
         info = manifest.get_long_format(name)
 
         if info is None:
-            raise ValueError(f"Long format '{name}' not found. Available: {self.list_long_formats()}")
+            raise ValueError(
+                f"Long format '{name}' not found. Available: {self.list_long_formats()}"
+            )
 
         file_path = self.root_dir / info.file_path
         return pd.read_parquet(file_path)
@@ -446,9 +466,15 @@ class FeatureStore:
         """
         Generate wide-format feature files from stored long-format data.
 
+        Anatomical features are named `anat_<metric>` (one per metric in
+        `ANATOMICAL_METRICS`, region columns from `label`). Diffusion features
+        are named `<software>_<model>_<param>[_<desc>]_<metric>` (one per
+        (software, model, param, desc) combination found in the data).
+
         Args:
             metrics: Specific metrics to generate (default: all available)
-            modalities: Modalities to process (default: all)
+            modalities: Modalities to process, "anatomical" and/or "diffusion"
+                (default: all)
 
         Returns:
             List of generated feature names
@@ -458,135 +484,140 @@ class FeatureStore:
 
         generated = []
 
-        # Process anatomical long formats
         for long_name, long_info_dict in manifest.long_formats.items():
             long_info = LongFormatInfo.from_dict(long_info_dict)
 
+            if modalities and long_info.modality not in modalities:
+                continue
+
+            df = self.load_long(long_name)
+
             if long_info.modality == "anatomical":
-                if modalities and not any(m in long_name for m in modalities):
-                    continue
-
-                # Load long format
-                df = self.load_long(long_name)
-                source_mod = long_name.replace("anatomical_", "")  # gm, wm, ct
-
-                # Generate wide for each metric
-                metrics_to_gen = metrics or long_info.metrics_available
-                for metric in metrics_to_gen:
-                    if metric not in df.columns:
-                        continue
-
-                    feat_name = f"{source_mod}_{metric}"
-                    feat_path = self.anatomical_wide_dir / f"{feat_name}.parquet"
-
-                    # Pivot to wide
-                    wide_df = df.pivot_table(
-                        index=["subject_code", "session_id"],
-                        columns="label",
-                        values=metric,
-                        aggfunc="first",
-                    ).reset_index()
-                    wide_df.columns.name = None
-
-                    wide_df.to_parquet(feat_path, compression=self.compression, index=False)
-
-                    # Get region names
-                    region_cols = [c for c in wide_df.columns if c not in META_COLS]
-
-                    info = FeatureInfo(
-                        name=feat_name,
-                        modality="anatomical",
-                        metric=metric,
-                        n_regions=len(region_cols),
-                        n_sessions=len(wide_df),
-                        region_names=region_cols,
-                        file_path=str(feat_path.relative_to(self.root_dir)),
-                        created_at=datetime.now().isoformat(),
-                        source_modality=source_mod,
-                    )
-                    manifest.add_feature(info)
-                    generated.append(feat_name)
-
-                    logger.info(f"Generated {feat_name}: {len(wide_df)} sessions, {len(region_cols)} regions")
-
+                generated.extend(self._generate_anatomical_wide(df, manifest, metrics))
             elif long_info.modality == "diffusion":
-                # Load long format
-                df = self.load_long(long_name)
-                workflow = long_name.replace("diffusion_", "")
-
-                # Determine region column
-                region_col = "name" if "name" in df.columns else "label"
-                if region_col not in df.columns:
-                    for alt in ["label", "name", "region"]:
-                        if alt in df.columns:
-                            region_col = alt
-                            break
-
-                # Find available summary statistics in this diffusion data
-                available_metrics = [m for m in DIFFUSION_METRICS if m in df.columns]
-                if not available_metrics:
-                    logger.warning(f"No summary statistics found in {long_name}")
-                    continue
-
-                # Get unique model/param combinations
-                if "model" in df.columns and "param" in df.columns:
-                    for (model, param), group in df.groupby(["model", "param"]):
-                        # Generate wide format for each available summary statistic
-                        for metric in available_metrics:
-                            if metric not in group.columns:
-                                continue
-
-                            # Feature name includes the summary statistic
-                            feat_name = f"{workflow}_{model}_{param}_{metric}"
-                            feat_path = self.diffusion_wide_dir / f"{feat_name}.parquet"
-
-                            # Pivot to wide
-                            wide_df = group.pivot_table(
-                                index=["subject_code", "session_id"],
-                                columns=region_col,
-                                values=metric,
-                                aggfunc="first",
-                            ).reset_index()
-                            wide_df.columns.name = None
-
-                            wide_df.to_parquet(feat_path, compression=self.compression, index=False)
-
-                            region_cols = [c for c in wide_df.columns if c not in META_COLS]
-
-                            info = FeatureInfo(
-                                name=feat_name,
-                                modality="diffusion",
-                                metric=metric,
-                                n_regions=len(region_cols),
-                                n_sessions=len(wide_df),
-                                region_names=region_cols,
-                                file_path=str(feat_path.relative_to(self.root_dir)),
-                                created_at=datetime.now().isoformat(),
-                                workflow=workflow,
-                                model=model,
-                                param=param,
-                            )
-                            manifest.add_feature(info)
-                            generated.append(feat_name)
-
-                            logger.info(f"Generated {feat_name}: {len(wide_df)} sessions")
+                generated.extend(self._generate_diffusion_wide(df, manifest, metrics))
 
         self._save_manifest()
+        return generated
+
+    def _generate_anatomical_wide(
+        self,
+        df: pd.DataFrame,
+        manifest: StoreManifest,
+        metrics: Optional[List[str]],
+    ) -> List[str]:
+        """Generate one `anat_<metric>.parquet` per anatomical metric."""
+        generated = []
+        metrics_to_gen = metrics or [m for m in ANATOMICAL_METRICS if m in df.columns]
+
+        for metric in metrics_to_gen:
+            if metric not in df.columns:
+                continue
+
+            feat_name = f"anat_{metric}"
+            feat_path = self.anatomical_wide_dir / f"{feat_name}.parquet"
+
+            wide_df = df.pivot_table(
+                index=META_COLS,
+                columns="label",
+                values=metric,
+                aggfunc="first",
+            ).reset_index()
+            wide_df.columns.name = None
+            wide_df.to_parquet(feat_path, compression=self.compression, index=False)
+
+            region_cols = [c for c in wide_df.columns if c not in META_COLS]
+
+            info = FeatureInfo(
+                name=feat_name,
+                modality="anatomical",
+                metric=metric,
+                n_regions=len(region_cols),
+                n_sessions=len(wide_df),
+                region_names=region_cols,
+                file_path=str(feat_path.relative_to(self.root_dir)),
+                created_at=datetime.now().isoformat(),
+            )
+            manifest.add_feature(info)
+            generated.append(feat_name)
+            logger.info(
+                f"Generated {feat_name}: {len(wide_df)} sessions, {len(region_cols)} regions"
+            )
+
+        return generated
+
+    def _generate_diffusion_wide(
+        self,
+        df: pd.DataFrame,
+        manifest: StoreManifest,
+        metrics: Optional[List[str]],
+    ) -> List[str]:
+        """Generate one `<software>_<model>_<param>[_<desc>]_<metric>.parquet` per combo/metric."""
+        generated = []
+        metrics_to_gen = metrics or [m for m in DIFFUSION_METRICS if m in df.columns]
+
+        for (software, model, param, desc), group in df.groupby(
+            ["software", "model", "param", "desc"], dropna=False
+        ):
+            combo_label = "_".join(str(x) for x in (software, model, param))
+            if pd.notna(desc):
+                combo_label = f"{combo_label}_{desc}"
+
+            for metric in metrics_to_gen:
+                if metric not in group.columns:
+                    continue
+
+                feat_name = f"{combo_label}_{metric}"
+                feat_path = self.diffusion_wide_dir / f"{feat_name}.parquet"
+
+                wide_df = group.pivot_table(
+                    index=META_COLS,
+                    columns="label",
+                    values=metric,
+                    aggfunc="first",
+                ).reset_index()
+                wide_df.columns.name = None
+                wide_df.to_parquet(feat_path, compression=self.compression, index=False)
+
+                region_cols = [c for c in wide_df.columns if c not in META_COLS]
+
+                info = FeatureInfo(
+                    name=feat_name,
+                    modality="diffusion",
+                    metric=metric,
+                    n_regions=len(region_cols),
+                    n_sessions=len(wide_df),
+                    region_names=region_cols,
+                    file_path=str(feat_path.relative_to(self.root_dir)),
+                    created_at=datetime.now().isoformat(),
+                    software=software,
+                    model=model,
+                    param=param,
+                    desc=desc if pd.notna(desc) else None,
+                )
+                manifest.add_feature(info)
+                generated.append(feat_name)
+                logger.info(
+                    f"Generated {feat_name}: {len(wide_df)} sessions, {len(region_cols)} regions"
+                )
+
         return generated
 
     # -------------------------------------------------------------------------
     # TIV storage
     # -------------------------------------------------------------------------
 
-    def save_tiv(self, df: pd.DataFrame) -> str:
+    def save_tiv(self, anatomical_df: pd.DataFrame) -> str:
         """
-        Save TIV (Total Intracranial Volume) data.
+        Extract and save TIV (`tiv_mm3`) from long-format anatomical data.
 
-        Saves TIV both as a standalone file (for load_tiv()) and as a
-        wide-format anatomical feature (for load_feature("tiv")).
+        Saves TIV both as a standalone file (for `load_tiv()`) and as a
+        wide-format anatomical feature (for `load_feature("tiv")`).
 
         Args:
-            df: DataFrame with subject_code, session_id, tiv columns
+            anatomical_df: Long-format anatomical DataFrame with `uid`,
+                `session_id`, and `tiv_mm3` columns (one value per session,
+                already present in the tabular derivatives).
 
         Returns:
             Feature name ("tiv")
@@ -594,15 +625,14 @@ class FeatureStore:
         self._ensure_dirs()
         manifest = self._load_manifest()
 
-        # Ensure required columns
-        required = ["subject_code", "session_id", "tiv"]
-        missing = [c for c in required if c not in df.columns]
+        required = META_COLS + ["tiv_mm3"]
+        missing = [c for c in required if c not in anatomical_df.columns]
         if missing:
-            raise ValueError(f"TIV DataFrame missing columns: {missing}")
+            raise ValueError(f"Anatomical DataFrame missing columns: {missing}")
 
-        tiv_df = df[required].drop_duplicates()
+        tiv_df = anatomical_df[required].drop_duplicates()
 
-        # Save as standalone TIV file (backwards compatibility)
+        # Save as standalone TIV file
         tiv_df.to_parquet(self.tiv_path, compression=self.compression, index=False)
 
         # Also save as wide-format anatomical feature
@@ -610,17 +640,15 @@ class FeatureStore:
         feat_path = self.anatomical_wide_dir / f"{feat_name}.parquet"
         tiv_df.to_parquet(feat_path, compression=self.compression, index=False)
 
-        # Register as a feature in manifest
         info = FeatureInfo(
             name=feat_name,
             modality="anatomical",
-            metric="tiv",
+            metric="tiv_mm3",
             n_regions=1,  # TIV is a single global measure
             n_sessions=len(tiv_df),
-            region_names=["tiv"],
+            region_names=["tiv_mm3"],
             file_path=str(feat_path.relative_to(self.root_dir)),
             created_at=datetime.now().isoformat(),
-            source_modality="global",
         )
         manifest.add_feature(info)
         manifest.has_tiv = True
@@ -632,7 +660,7 @@ class FeatureStore:
     def load_tiv(self) -> pd.DataFrame:
         """Load TIV data."""
         if not self.tiv_path.exists():
-            raise FileNotFoundError("TIV file not found. Run pipeline with TIV calculation enabled.")
+            raise FileNotFoundError("TIV file not found. Run `save_tiv()` first.")
         return pd.read_parquet(self.tiv_path)
 
     def has_tiv(self) -> bool:
@@ -643,45 +671,22 @@ class FeatureStore:
     # Metadata storage
     # -------------------------------------------------------------------------
 
-    def save_metadata(self, df: pd.DataFrame, age_col: str = "AGE") -> None:
+    def save_metadata(self, df: pd.DataFrame) -> None:
         """
-        Save session metadata (AGE, etc.).
+        Save session metadata (AGE, sex, lab, ... from `BehavioralLoader`).
 
         Args:
-            df: DataFrame with subject_code, session_id, and metadata columns
-            age_col: Name of age column in input
+            df: DataFrame with `uid`, `session_id`, and demographic/
+                questionnaire columns (e.g. from `BehavioralLoader.get_sessions()`).
         """
-        cols = ["subject_code", "session_id"]
-
-        # Handle age column
-        for col in [age_col, "AGE", "Age@Scan", "age", "Age"]:
-            if col in df.columns:
-                cols.append(col)
-                break
-
-        # Include other metadata columns
-        feature_prefixes = ("gm_", "wm_", "ct_", "DSIStudio", "MRtrix", "DIPY", "AMICO")
-        for col in df.columns:
-            if col not in cols and not any(col.startswith(p) for p in feature_prefixes):
-                if col not in ANATOMICAL_METRICS and col not in REGION_ID_COLS:
-                    cols.append(col)
-
-        # Only keep columns that exist
-        cols = [c for c in cols if c in df.columns]
-
-        meta_df = df[cols].drop_duplicates()
-
-        # Standardize age column name
-        if age_col in meta_df.columns and age_col != "AGE":
-            meta_df = meta_df.rename(columns={age_col: "AGE"})
-
+        meta_df = df.drop_duplicates(subset=META_COLS)
         meta_df.to_parquet(self.metadata_path, compression=self.compression, index=False)
         logger.info(f"Saved metadata: {len(meta_df)} sessions")
 
     def load_metadata(self) -> pd.DataFrame:
         """Load session metadata."""
         if not self.metadata_path.exists():
-            return pd.DataFrame(columns=["subject_code", "session_id"])
+            return pd.DataFrame(columns=META_COLS)
         return pd.read_parquet(self.metadata_path)
 
     # -------------------------------------------------------------------------
@@ -714,12 +719,12 @@ class FeatureStore:
         Load a wide-format feature.
 
         Args:
-            name: Feature name (e.g., "gm_volume_mm3", "ct_mean")
-            include_metadata: Whether to merge with metadata (AGE)
-            include_tiv: Whether to include TIV column
+            name: Feature name (e.g., "anat_thickness_mean_mm", "DSIStudio_tensor_fa_mean")
+            include_metadata: Whether to merge with metadata (AGE, sex, ...)
+            include_tiv: Whether to include the `tiv_mm3` column
 
         Returns:
-            DataFrame with subject_code, session_id, and region columns
+            DataFrame with `uid`, `session_id`, and region columns
         """
         manifest = self._load_manifest()
         info = manifest.get_feature(name)
@@ -732,11 +737,11 @@ class FeatureStore:
 
         if include_metadata and self.metadata_path.exists():
             meta_df = pd.read_parquet(self.metadata_path)
-            df = df.merge(meta_df, on=["subject_code", "session_id"], how="left")
+            df = df.merge(meta_df, on=META_COLS, how="left")
 
         if include_tiv and self.tiv_path.exists():
             tiv_df = pd.read_parquet(self.tiv_path)
-            df = df.merge(tiv_df, on=["subject_code", "session_id"], how="left")
+            df = df.merge(tiv_df, on=META_COLS, how="left")
 
         return df
 
@@ -754,15 +759,15 @@ class FeatureStore:
 
         for name in names[1:]:
             feature_df = self.load_feature(name, include_metadata=False, include_tiv=False)
-            result = result.merge(feature_df, on=["subject_code", "session_id"], how="outer")
+            result = result.merge(feature_df, on=META_COLS, how="outer")
 
         if include_metadata and self.metadata_path.exists():
             meta_df = pd.read_parquet(self.metadata_path)
-            result = result.merge(meta_df, on=["subject_code", "session_id"], how="left")
+            result = result.merge(meta_df, on=META_COLS, how="left")
 
         if include_tiv and self.tiv_path.exists():
             tiv_df = pd.read_parquet(self.tiv_path)
-            result = result.merge(tiv_df, on=["subject_code", "session_id"], how="left")
+            result = result.merge(tiv_df, on=META_COLS, how="left")
 
         return result
 
@@ -778,12 +783,12 @@ class FeatureStore:
     # -------------------------------------------------------------------------
 
     def get_existing_sessions(self) -> pd.DataFrame:
-        """Get all subject-session pairs in the store."""
+        """Get all (uid, session_id) pairs in the store."""
         if not self.metadata_path.exists():
-            return pd.DataFrame(columns=["subject_code", "session_id"])
+            return pd.DataFrame(columns=META_COLS)
 
         meta = pd.read_parquet(self.metadata_path)
-        return meta[["subject_code", "session_id"]].drop_duplicates()
+        return meta[META_COLS].drop_duplicates()
 
     # -------------------------------------------------------------------------
     # Summary
