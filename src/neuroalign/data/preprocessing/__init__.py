@@ -23,7 +23,6 @@ from .feature_store import (
     StoreManifest,
 )
 from .pipeline import DataPreparationPipeline, PipelineResult
-from .transformers import AnatomicalWideTransformer, DiffusionWideTransformer
 
 __all__ = [
     # Config
@@ -40,7 +39,4 @@ __all__ = [
     # Pipeline
     "DataPreparationPipeline",
     "PipelineResult",
-    # Transformers (for backwards compatibility)
-    "AnatomicalWideTransformer",
-    "DiffusionWideTransformer",
 ]

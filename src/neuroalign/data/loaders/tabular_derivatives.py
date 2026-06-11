@@ -25,11 +25,9 @@ from __future__ import annotations
 import logging
 import re
 from pathlib import Path
-from typing import Literal, Optional, Tuple
+from typing import Dict, Literal, Optional, Tuple
 
 import pandas as pd
-
-from neuroalign.data.loaders.diffusion import parse_bids_entities
 
 logger = logging.getLogger(__name__)
 
@@ -38,6 +36,23 @@ _STRUCTURE_RE = re.compile(r"structure-([A-Za-z0-9]+)")
 # Rows for the medial wall / unparcellated background - not real regions, and
 # absent from the diffusion atlases, so they're dropped on load.
 _BACKGROUND_LABELS = {"Background+FreeSurfer_Defined_Medial_Wall"}
+
+
+def parse_bids_entities(filename: str) -> Dict[str, str]:
+    """
+    Parse BIDS filename entities.
+
+    Example:
+        >>> parse_bids_entities("sub-001_ses-01_model-DTI_param-MD_dseg.tsv")
+        {'sub': '001', 'ses': '01', 'model': 'DTI', 'param': 'MD'}
+    """
+    entities = {}
+    parts = Path(filename).name.split("_")
+    for part in parts:
+        if "-" in part:
+            key, value = part.split("-", 1)
+            entities[key] = value
+    return entities
 
 
 class TabularDerivativesLoader:
