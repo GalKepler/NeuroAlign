@@ -32,12 +32,44 @@ class OutputConfig(BaseModel):
     compression: Optional[str] = "snappy"
 
 
+class BAGEstimationConfig(BaseModel):
+    """Configuration for automatic regional Brain Age Gap (BAG) estimation.
+
+    Column mapping (age/sex/tiv/subject/session) is fixed to the
+    `FeatureStore` schema (``AGE``, ``sex``, ``tiv_mm3``, ``uid``,
+    ``session_id``) and is not configurable here; the remaining fields
+    mirror `neuroalign.modeling.config.BAGConfig`.
+    """
+
+    enabled: bool = False
+    univariate_features: List[str] = Field(
+        default_factory=lambda: ["anat_thickness_mean_mm"],
+        description="Wide-format feature names for per-region univariate BAG estimation",
+    )
+    multivariate_feature_sets: List[List[str]] = Field(
+        default_factory=list,
+        description="Combinations of wide-format feature names for multivariate BAG estimation",
+    )
+
+    splits: Literal["group_kfold", "loo"] = "group_kfold"
+    n_splits: int = Field(default=5, ge=2)
+    model_type: Literal["ridge", "xgboost", "lightgbm"] = "ridge"
+    polynomial_degree: int = Field(default=2, ge=1)
+    bias_correction: bool = True
+    ipw: bool = True
+    ipw_bandwidth: float = Field(default=2.0, gt=0)
+    random_state: int = 42
+    n_jobs: int = 1
+    progress: bool = True
+
+
 class PipelineConfig(BaseModel):
     """Main pipeline configuration."""
 
     paths: DataPaths
     modalities: ModalityConfig = Field(default_factory=ModalityConfig)
     output: OutputConfig = Field(default_factory=OutputConfig)
+    bag_estimation: BAGEstimationConfig = Field(default_factory=BAGEstimationConfig)
     atlas_name: str = "Schaefer2018N400n7Tian2020S2"
     anat_atlases: Tuple[str, str] = ("Schaefer2018N400n7", "Tian2020S2")
     session_variant: Literal["cross", "plain", "subject"] = "cross"

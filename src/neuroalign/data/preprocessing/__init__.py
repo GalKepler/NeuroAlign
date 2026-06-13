@@ -14,7 +14,7 @@ Example:
     >>> multi = store.load_features(["gm_volume", "ct_thickness"])
 """
 
-from .config import DataPaths, ModalityConfig, OutputConfig, PipelineConfig
+from .config import BAGEstimationConfig, DataPaths, ModalityConfig, OutputConfig, PipelineConfig
 from .feature_store import (
     ANATOMICAL_METRICS,
     FeatureInfo,
@@ -30,6 +30,7 @@ __all__ = [
     "DataPaths",
     "ModalityConfig",
     "OutputConfig",
+    "BAGEstimationConfig",
     # Feature Store
     "FeatureStore",
     "FeatureInfo",

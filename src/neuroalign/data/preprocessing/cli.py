@@ -13,6 +13,7 @@ from typing import Optional
 from dotenv import load_dotenv
 
 from neuroalign.data.preprocessing.config import (
+    BAGEstimationConfig,
     DataPaths,
     ModalityConfig,
     OutputConfig,
@@ -232,6 +233,63 @@ Environment variables (loaded from .env):
         help="Force reload all sessions (ignore existing data in store)",
     )
 
+    # BAG estimation
+    bag_group = parser.add_argument_group("Regional Brain Age Gap (BAG) estimation")
+    bag_group.add_argument(
+        "--run-bag-estimation",
+        action="store_true",
+        help="Run regional BAG estimation after building the feature store",
+    )
+    bag_group.add_argument(
+        "--bag-univariate-features",
+        nargs="+",
+        default=None,
+        metavar="FEATURE",
+        help=(
+            "Wide-format feature names for per-region univariate BAG estimation "
+            "(default: anat_thickness_mean_mm)"
+        ),
+    )
+    bag_group.add_argument(
+        "--bag-multivariate-features",
+        nargs="+",
+        default=None,
+        metavar="FEATURE1,FEATURE2,...",
+        help=(
+            "Comma-separated wide-format feature combinations for multivariate BAG "
+            "estimation. Repeat to run multiple combinations, "
+            "e.g. --bag-multivariate-features anat_thickness_mean_mm,DSIStudio_tensor_fa_mean"
+        ),
+    )
+    bag_group.add_argument(
+        "--bag-model-type",
+        choices=["ridge", "xgboost", "lightgbm"],
+        default="ridge",
+        help="Base model type for BAG estimation (default: ridge)",
+    )
+    bag_group.add_argument(
+        "--bag-n-splits",
+        type=int,
+        default=5,
+        help="Number of GroupKFold splits for BAG estimation (default: 5)",
+    )
+    bag_group.add_argument(
+        "--bag-n-jobs",
+        type=int,
+        default=1,
+        help="Parallel region fitting for BAG estimation, -1 for all cores (default: 1)",
+    )
+    bag_group.add_argument(
+        "--bag-no-bias-correction",
+        action="store_true",
+        help="Disable post-hoc BAG bias correction",
+    )
+    bag_group.add_argument(
+        "--bag-no-ipw",
+        action="store_true",
+        help="Disable inverse probability weighting in BAG estimation",
+    )
+
     return parser.parse_args()
 
 
@@ -255,10 +313,27 @@ def build_config(args: argparse.Namespace) -> PipelineConfig:
 
     anat_atlases = tuple(a.strip() for a in args.anat_atlases.split(","))
 
+    bag_kwargs = {
+        "enabled": args.run_bag_estimation,
+        "model_type": args.bag_model_type,
+        "n_splits": args.bag_n_splits,
+        "n_jobs": args.bag_n_jobs,
+        "bias_correction": not args.bag_no_bias_correction,
+        "ipw": not args.bag_no_ipw,
+    }
+    if args.bag_univariate_features is not None:
+        bag_kwargs["univariate_features"] = args.bag_univariate_features
+    if args.bag_multivariate_features is not None:
+        bag_kwargs["multivariate_feature_sets"] = [
+            combo.split(",") for combo in args.bag_multivariate_features
+        ]
+    bag_estimation = BAGEstimationConfig(**bag_kwargs)
+
     return PipelineConfig(
         paths=paths,
         modalities=modalities,
         output=output,
+        bag_estimation=bag_estimation,
         atlas_name=args.atlas_name,
         anat_atlases=anat_atlases,
         session_variant=args.session_variant,
@@ -266,6 +341,20 @@ def build_config(args: argparse.Namespace) -> PipelineConfig:
         require_complete_mapping=not args.allow_incomplete_mapping,
         force=args.force,
     )
+
+
+def _print_wide_features(result: PipelineResult) -> None:
+    """Print the generated wide-format feature breakdown."""
+    print()
+    print(f"Wide feature types: {result.metadata['n_wide_features']}")
+    anat_feats = result.metadata.get("anatomical_features", [])
+    diff_feats = result.metadata.get("diffusion_features", [])
+    print(f"  Anatomical: {len(anat_feats)}")
+    for feat in anat_feats:
+        print(f"    - {feat}")
+    print(f"  Diffusion: {len(diff_feats)}")
+    for feat in diff_feats:
+        print(f"    - {feat}")
 
 
 def _print_summary(result: PipelineResult, log_path: Optional[Path]) -> None:
@@ -289,16 +378,7 @@ def _print_summary(result: PipelineResult, log_path: Optional[Path]) -> None:
     for fmt in result.long_formats_saved:
         print(f"  - {fmt}")
 
-    print()
-    print(f"Wide feature types: {result.metadata['n_wide_features']}")
-    anat_feats = result.metadata.get("anatomical_features", [])
-    diff_feats = result.metadata.get("diffusion_features", [])
-    print(f"  Anatomical: {len(anat_feats)}")
-    for feat in anat_feats:
-        print(f"    - {feat}")
-    print(f"  Diffusion: {len(diff_feats)}")
-    for feat in diff_feats:
-        print(f"    - {feat}")
+    _print_wide_features(result)
 
     age_stats = result.metadata["age_stats"]
     if age_stats["min"] is not None:
@@ -309,6 +389,12 @@ def _print_summary(result: PipelineResult, log_path: Optional[Path]) -> None:
         )
         if age_stats["missing"] > 0:
             print(f"  Missing age: {age_stats['missing']} sessions")
+
+    if result.bag_results_saved:
+        print()
+        print("BAG estimation results saved:")
+        for bag_path in result.bag_results_saved:
+            print(f"  - {bag_path}")
 
     if log_path:
         print()
@@ -362,6 +448,7 @@ def main() -> int:
         logger.debug(f"  Atlas: {config.atlas_name} ({config.anat_atlases})")
         logger.debug(f"  Session variant: {config.session_variant}")
         logger.debug(f"  Labs: {config.labs}")
+        logger.debug(f"  BAG estimation: {config.bag_estimation}")
 
         pipeline = DataPreparationPipeline(config)
         result = pipeline.run()

@@ -9,7 +9,7 @@ metric/combination) files.
 
 import logging
 from concurrent.futures import ThreadPoolExecutor
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -34,6 +34,7 @@ class PipelineResult:
     wide_features_generated: List[str]
     n_new_sessions: int = 0
     n_skipped_sessions: int = 0
+    bag_results_saved: List[str] = field(default_factory=list)
 
 
 class DataPreparationPipeline:
@@ -155,6 +156,80 @@ class DataPreparationPipeline:
             "atlas_name": self.config.atlas_name,
         }
 
+    def _run_bag_estimation(self, store: FeatureStore) -> List[str]:
+        """Run configured regional BAG estimators and save results into the store.
+
+        Writes one `BAGResult` (see `neuroalign.modeling.result.BAGResult.save`)
+        per configured univariate feature to
+        ``<output_dir>/bag/univariate/<feature_name>/`` and per multivariate
+        feature combination to
+        ``<output_dir>/bag/multivariate/<feature1>_<feature2>_.../``.
+        """
+        bag_cfg = self.config.bag_estimation
+        if not bag_cfg.enabled:
+            return []
+
+        from neuroalign.modeling import (
+            BAGConfig,
+            MultivariateRegionalBAGEstimator,
+            RegionalBAGEstimator,
+        )
+
+        model_cfg = BAGConfig(
+            splits=bag_cfg.splits,
+            n_splits=bag_cfg.n_splits,
+            model_type=bag_cfg.model_type,
+            polynomial_degree=bag_cfg.polynomial_degree,
+            bias_correction=bag_cfg.bias_correction,
+            ipw=bag_cfg.ipw,
+            ipw_bandwidth=bag_cfg.ipw_bandwidth,
+            random_state=bag_cfg.random_state,
+            n_jobs=bag_cfg.n_jobs,
+            progress=bag_cfg.progress,
+            age_col="AGE",
+            sex_col="sex",
+            tiv_col="tiv_mm3",
+            subject_col="uid",
+            session_col="session_id",
+        )
+
+        available_features = store.list_features()
+        metadata = store.load_metadata()
+        if store.has_tiv():
+            metadata = metadata.merge(store.load_tiv(), on=META_COLS, how="left")
+
+        saved: List[str] = []
+
+        for feature_name in bag_cfg.univariate_features:
+            if feature_name not in available_features:
+                logger.warning(
+                    "Skipping univariate BAG estimation: feature '%s' not found.", feature_name
+                )
+                continue
+            logger.info("Running univariate BAG estimation for '%s'...", feature_name)
+            features = store.load_feature(feature_name, include_metadata=False)
+            result = RegionalBAGEstimator(model_cfg).fit_predict(features, metadata)
+            out_dir = store.root_dir / "bag" / "univariate" / feature_name
+            result.save(out_dir)
+            saved.append(str(out_dir.relative_to(store.root_dir)))
+
+        for feature_set in bag_cfg.multivariate_feature_sets:
+            missing = [f for f in feature_set if f not in available_features]
+            if missing:
+                logger.warning(
+                    "Skipping multivariate BAG estimation for %s: feature(s) %s not found.",
+                    feature_set,
+                    missing,
+                )
+                continue
+            logger.info("Running multivariate BAG estimation for %s...", feature_set)
+            result = MultivariateRegionalBAGEstimator(model_cfg).fit_predict(store, feature_set)
+            out_dir = store.root_dir / "bag" / "multivariate" / "_".join(feature_set)
+            result.save(out_dir)
+            saved.append(str(out_dir.relative_to(store.root_dir)))
+
+        return saved
+
     def run(self) -> PipelineResult:
         """
         Execute the full data preparation pipeline.
@@ -180,6 +255,7 @@ class DataPreparationPipeline:
         if sessions_to_load.empty:
             logger.info("All sessions already in store - nothing to do")
             metadata = self._compute_metadata(store)
+            bag_results_saved = self._run_bag_estimation(store)
             return PipelineResult(
                 store=store,
                 metadata=metadata,
@@ -188,6 +264,7 @@ class DataPreparationPipeline:
                 wide_features_generated=store.list_features(),
                 n_new_sessions=0,
                 n_skipped_sessions=n_skipped,
+                bag_results_saved=bag_results_saved,
             )
 
         n_new_sessions = len(sessions_to_load[META_COLS].drop_duplicates())
@@ -238,6 +315,8 @@ class DataPreparationPipeline:
 
         metadata = self._compute_metadata(store)
 
+        bag_results_saved = self._run_bag_estimation(store)
+
         logger.info("Pipeline complete!")
 
         return PipelineResult(
@@ -248,4 +327,5 @@ class DataPreparationPipeline:
             wide_features_generated=wide_features,
             n_new_sessions=n_new_sessions,
             n_skipped_sessions=n_skipped,
+            bag_results_saved=bag_results_saved,
         )
