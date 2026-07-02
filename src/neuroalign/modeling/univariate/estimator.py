@@ -216,21 +216,36 @@ class RegionalBAGEstimator:
                 metric_train = df[region].values[train_idx]
                 metric_test = df[region].values[test_idx]
 
+                valid_train = ~np.isnan(metric_train)
+                valid_test = ~np.isnan(metric_test)
+
+                if valid_train.sum() < 2:
+                    continue
+
+                m_train = metric_train[valid_train]
+                m_test = metric_test[valid_test]
+                t_ages = train_ages[valid_train]
+                t_weights = weights[valid_train] if weights is not None else None
+                s_train = sex_enc[train_idx][valid_train]
+                s_test = sex_enc[test_idx][valid_test]
+                v_train = tiv[train_idx][valid_train]
+                v_test = tiv[test_idx][valid_test]
+
                 # Build feature matrices: [metric, sex, tiv]
                 # Polynomial expansion on metric only (for ridge)
                 if use_poly and cfg.polynomial_degree > 1:
                     poly = PolynomialFeatures(degree=cfg.polynomial_degree, include_bias=False)
-                    metric_train_poly = poly.fit_transform(metric_train.reshape(-1, 1))
-                    metric_test_poly = poly.transform(metric_test.reshape(-1, 1))
+                    metric_train_poly = poly.fit_transform(m_train.reshape(-1, 1))
+                    metric_test_poly = poly.transform(m_test.reshape(-1, 1))
                 else:
-                    metric_train_poly = metric_train.reshape(-1, 1)
-                    metric_test_poly = metric_test.reshape(-1, 1)
+                    metric_train_poly = m_train.reshape(-1, 1)
+                    metric_test_poly = m_test.reshape(-1, 1)
 
-                X_train = np.column_stack([metric_train_poly, sex_enc[train_idx], tiv[train_idx]])
-                X_test = np.column_stack([metric_test_poly, sex_enc[test_idx], tiv[test_idx]])
+                X_train = np.column_stack([metric_train_poly, s_train, v_train])
+                X_test = np.column_stack([metric_test_poly, s_test, v_test])
 
-                preds = _fit_region(region, X_train, train_ages, X_test, weights, cfg)
-                pred_matrix[test_idx, region_idx] = preds
+                preds = _fit_region(region, X_train, t_ages, X_test, t_weights, cfg)
+                pred_matrix[test_idx[valid_test], region_idx] = preds
         logger.info("Cross-validation finished.")
 
         # --- 5. Assemble results ---
@@ -263,9 +278,13 @@ class RegionalBAGEstimator:
         metrics_rows = []
         for region_idx, region in enumerate(regions):
             pred = pred_matrix[:, region_idx]
-            r2 = r2_score(ages, pred)
-            mae = mean_absolute_error(ages, pred)
-            corr, _ = pearsonr(ages, pred)
+            valid = ~np.isnan(pred)
+            if valid.sum() < 2:
+                metrics_rows.append({"region": region, "r2": np.nan, "mae": np.nan, "correlation": np.nan})
+                continue
+            r2 = r2_score(ages[valid], pred[valid])
+            mae = mean_absolute_error(ages[valid], pred[valid])
+            corr, _ = pearsonr(ages[valid], pred[valid])
             metrics_rows.append({"region": region, "r2": r2, "mae": mae, "correlation": corr})
         region_metrics = pd.DataFrame(metrics_rows)
 

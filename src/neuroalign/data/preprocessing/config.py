@@ -50,6 +50,10 @@ class BAGEstimationConfig(BaseModel):
         default_factory=list,
         description="Combinations of wide-format feature names for multivariate BAG estimation",
     )
+    multivariate_tiv_normalize: List[str] = Field(
+        default_factory=list,
+        description="Feature names to divide by TIV before multivariate BAG estimation",
+    )
 
     splits: Literal["group_kfold", "loo"] = "group_kfold"
     n_splits: int = Field(default=5, ge=2)
@@ -61,6 +65,15 @@ class BAGEstimationConfig(BaseModel):
     random_state: int = 42
     n_jobs: int = 1
     progress: bool = True
+    min_coverage: float = Field(
+        default=0.5,
+        ge=0.0,
+        le=1.0,
+        description=(
+            "Minimum fraction of metadata sessions a feature must cover "
+            "(after merge) to run BAG estimation; sparser features are skipped."
+        ),
+    )
 
 
 class PipelineConfig(BaseModel):

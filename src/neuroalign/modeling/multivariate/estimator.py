@@ -16,8 +16,12 @@ import numpy as np
 import pandas as pd
 from regional_stacker import RegionalStackingRegressor, wide_to_stacker_input
 from scipy.stats import pearsonr
+from sklearn.impute import SimpleImputer
+from sklearn.linear_model import RidgeCV
 from sklearn.metrics import mean_absolute_error, r2_score
 from sklearn.model_selection import GroupKFold, LeaveOneGroupOut
+from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import StandardScaler
 
 from neuroalign.data.preprocessing import FeatureStore
 from neuroalign.data.preprocessing.feature_store import META_COLS
@@ -26,6 +30,23 @@ from neuroalign.modeling.config import BAGConfig
 from neuroalign.modeling.result import BAGResult
 
 logger = logging.getLogger(__name__)
+
+
+def _build_pipeline() -> Pipeline:
+    """Median-impute + scale + RidgeCV, so per-region NaNs (missing coverage) don't crash the fit.
+
+    RidgeCV (not a fixed-alpha Ridge) tunes regularization per region/fold via
+    internal CV — an untuned alpha=1 leaves regions with collinear/high-dim
+    feature blocks under-regularized, which is what produced physically
+    impossible age predictions (e.g. large negative ages) downstream.
+    """
+    return Pipeline(
+        [
+            ("imputer", SimpleImputer(strategy="median")),
+            ("scaler", StandardScaler()),
+            ("model", RidgeCV(alphas=np.logspace(-5, 5, 20))),
+        ]
+    )
 
 
 def _run_outer_cv(
@@ -69,9 +90,12 @@ def _run_outer_cv(
 
         stacker = RegionalStackingRegressor(
             region_mapping=region_mapping,
+            base_estimator=_build_pipeline(),
+            meta_estimator=_build_pipeline(),
             outer_cv=max(2, min(stage1_cv, len(train_idx))),
             random_state=cfg.random_state,
             n_jobs=cfg.n_jobs,
+            allow_nan=True,
         )
         stacker.fit(x[train_idx], train_ages, sample_weight=sample_weight)
         pred[test_idx] = stacker.predict(x[test_idx])
@@ -91,9 +115,12 @@ def _compute_region_metrics(
     full_weight = compute_ipw_weights(ages, cfg.ipw_bandwidth) if cfg.ipw else None
     full_stacker = RegionalStackingRegressor(
         region_mapping=region_mapping,
+        base_estimator=_build_pipeline(),
+        meta_estimator=_build_pipeline(),
         outer_cv=n_subjects_proxy,
         random_state=cfg.random_state,
         n_jobs=cfg.n_jobs,
+        allow_nan=True,
     )
     full_stacker.fit(x, ages, sample_weight=full_weight)
 
@@ -130,6 +157,7 @@ class MultivariateRegionalBAGEstimator:
         self,
         store: FeatureStore,
         feature_names: Sequence[str],
+        tiv_normalize: Sequence[str] | None = None,
     ) -> BAGResult:
         """Run cross-validated multivariate regional BAG estimation.
 
@@ -156,11 +184,42 @@ class MultivariateRegionalBAGEstimator:
             from a fit on the full dataset.
         """
         cfg = self.config
+        _tiv_normalize = set(tiv_normalize or [])
+        tiv = None
+        if _tiv_normalize:
+            tiv_df = store.load_tiv().dropna(subset=["tiv_mm3"])
+            dupes = tiv_df.duplicated(subset=META_COLS).sum()
+            if dupes:
+                logger.warning(
+                    "Dropping %d duplicate (uid, session_id) row(s) from TIV table.", dupes
+                )
+                tiv_df = tiv_df.drop_duplicates(subset=META_COLS, keep="first")
+            tiv = tiv_df.set_index(META_COLS)["tiv_mm3"]
 
-        tables = {
-            name: store.load_feature(name, include_metadata=False).set_index(META_COLS)
-            for name in feature_names
-        }
+        tables = {}
+        for name in feature_names:
+            df = store.load_feature(name, include_metadata=False).set_index(META_COLS)
+            if name in _tiv_normalize:
+                df = df.div(tiv, axis=0)
+            tables[name] = df
+
+        # Keep sessions present in >=50% of tables (not just the full intersection);
+        # missing tables become NaN rows, imputed downstream by the per-region pipeline.
+        n_tables = len(tables)
+        dfs = list(tables.values())
+        union_index = dfs[0].index
+        for df in dfs[1:]:
+            union_index = union_index.union(df.index)
+        coverage = pd.Series(0, index=union_index)
+        for df in dfs:
+            coverage.loc[df.index] += 1
+        keep_sessions = coverage[coverage >= n_tables / 2].index.sort_values()
+        dropped = len(coverage) - len(keep_sessions)
+        if dropped:
+            logger.warning(
+                "Dropping %d session(s) present in fewer than 50%% of feature tables.", dropped
+            )
+        tables = {name: df.reindex(keep_sessions) for name, df in tables.items()}
 
         x, region_mapping, sessions = wide_to_stacker_input(tables)
         logger.info(
@@ -180,10 +239,12 @@ class MultivariateRegionalBAGEstimator:
             meta = meta[keep]
             sessions = [s for s, k in zip(sessions, keep, strict=True) if k]
 
-        if np.isnan(x).any():
-            raise ValueError(
-                "Feature matrix contains NaNs after combining tables; "
-                "RegionalStackingRegressor requires complete data."
+        n_nan = int(np.isnan(x).sum())
+        if n_nan:
+            logger.warning(
+                "Feature matrix contains %d NaN value(s) after combining tables; "
+                "median-imputed inside each fold.",
+                n_nan,
             )
 
         ages = meta[cfg.age_col].to_numpy(dtype=float)
@@ -191,17 +252,33 @@ class MultivariateRegionalBAGEstimator:
 
         pred = _run_outer_cv(x, ages, uids, region_mapping, cfg)
 
+        implausible = (pred < 0) | (pred > 120)
+        n_implausible = int(implausible.sum())
+        if n_implausible:
+            logger.warning(
+                "Dropping %d session(s) with physically implausible predicted age "
+                "(outside [0, 120]) - likely a data-quality issue in the underlying "
+                "feature values.",
+                n_implausible,
+            )
+            keep = ~implausible
+            pred = pred[keep]
+            kept_ages = ages[keep]
+            sessions = [s for s, k in zip(sessions, keep, strict=True) if k]
+        else:
+            kept_ages = ages
+
         ids = pd.DataFrame(sessions, columns=META_COLS)
 
         predicted_age = ids.copy()
         predicted_age["predicted_age"] = pred
 
         bag_uncorrected = ids.copy()
-        bag_uncorrected["bag"] = pred - ages
+        bag_uncorrected["bag"] = pred - kept_ages
 
         if cfg.bias_correction:
             logger.info("Applying bias correction.")
-            corrected = apply_bias_correction(bag_uncorrected[["bag"]], ages)
+            corrected = apply_bias_correction(bag_uncorrected[["bag"]], kept_ages)
             bag = ids.copy()
             bag["bag"] = corrected["bag"].values
         else:

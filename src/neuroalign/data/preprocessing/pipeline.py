@@ -199,6 +199,11 @@ class DataPreparationPipeline:
             metadata = metadata.merge(store.load_tiv(), on=META_COLS, how="left")
 
         saved: List[str] = []
+        n_sessions = len(metadata)
+
+        def _coverage(feature_name: str) -> float:
+            n_rows = len(store.load_feature(feature_name, include_metadata=False))
+            return n_rows / n_sessions if n_sessions else 0.0
 
         for feature_name in bag_cfg.univariate_features:
             if feature_name not in available_features:
@@ -206,9 +211,25 @@ class DataPreparationPipeline:
                     "Skipping univariate BAG estimation: feature '%s' not found.", feature_name
                 )
                 continue
+            coverage = _coverage(feature_name)
+            if coverage < bag_cfg.min_coverage:
+                logger.warning(
+                    "Skipping univariate BAG estimation for '%s': coverage %.1f%% below "
+                    "min_coverage=%.1f%%.",
+                    feature_name,
+                    coverage * 100,
+                    bag_cfg.min_coverage * 100,
+                )
+                continue
             logger.info("Running univariate BAG estimation for '%s'...", feature_name)
             features = store.load_feature(feature_name, include_metadata=False)
-            result = RegionalBAGEstimator(model_cfg).fit_predict(features, metadata)
+            try:
+                result = RegionalBAGEstimator(model_cfg).fit_predict(features, metadata)
+            except ValueError as e:
+                logger.warning(
+                    "Skipping univariate BAG estimation for '%s': %s", feature_name, e
+                )
+                continue
             out_dir = store.root_dir / "bag" / "univariate" / feature_name
             result.save(out_dir)
             saved.append(str(out_dir.relative_to(store.root_dir)))
@@ -222,8 +243,26 @@ class DataPreparationPipeline:
                     missing,
                 )
                 continue
+            worst_coverage = min(_coverage(f) for f in feature_set)
+            if worst_coverage < bag_cfg.min_coverage:
+                logger.warning(
+                    "Skipping multivariate BAG estimation for %s: worst-feature coverage "
+                    "%.1f%% below min_coverage=%.1f%%.",
+                    feature_set,
+                    worst_coverage * 100,
+                    bag_cfg.min_coverage * 100,
+                )
+                continue
             logger.info("Running multivariate BAG estimation for %s...", feature_set)
-            result = MultivariateRegionalBAGEstimator(model_cfg).fit_predict(store, feature_set)
+            try:
+                result = MultivariateRegionalBAGEstimator(model_cfg).fit_predict(
+                    store, feature_set, tiv_normalize=bag_cfg.multivariate_tiv_normalize
+                )
+            except ValueError as e:
+                logger.warning(
+                    "Skipping multivariate BAG estimation for %s: %s", feature_set, e
+                )
+                continue
             out_dir = store.root_dir / "bag" / "multivariate" / "_".join(feature_set)
             result.save(out_dir)
             saved.append(str(out_dir.relative_to(store.root_dir)))
@@ -252,8 +291,13 @@ class DataPreparationPipeline:
 
         sessions_to_load, n_skipped = self._get_sessions_to_load(store)
 
-        if sessions_to_load.empty:
-            logger.info("All sessions already in store - nothing to do")
+        no_modalities = not (self.config.modalities.anatomical or self.config.modalities.diffusion)
+
+        if sessions_to_load.empty or no_modalities:
+            if no_modalities:
+                logger.info("No modalities enabled - skipping data loading, running BAG estimation only")
+            else:
+                logger.info("All sessions already in store - nothing to do")
             metadata = self._compute_metadata(store)
             bag_results_saved = self._run_bag_estimation(store)
             return PipelineResult(
@@ -284,6 +328,28 @@ class DataPreparationPipeline:
             long_formats_saved.extend(names)
 
         if not long_formats_saved:
+            if store.exists() and n_skipped > 0:
+                # Incremental run where the "new" sessions (e.g. brainlink rows
+                # added since the last run) simply have no processed anat/dwi
+                # derivatives yet - nothing to save, but the existing store is
+                # still valid. Fall through to BAG estimation on it.
+                logger.warning(
+                    "%d new session(s) had no anatomical or diffusion derivatives "
+                    "available yet; skipping them.",
+                    n_new_sessions,
+                )
+                metadata = self._compute_metadata(store)
+                bag_results_saved = self._run_bag_estimation(store)
+                return PipelineResult(
+                    store=store,
+                    metadata=metadata,
+                    output_path=self.config.paths.output_dir,
+                    long_formats_saved=store.list_long_formats(),
+                    wide_features_generated=store.list_features(),
+                    n_new_sessions=0,
+                    n_skipped_sessions=n_skipped,
+                    bag_results_saved=bag_results_saved,
+                )
             raise ValueError("No data was saved - check your data paths")
 
         # =====================================================================
@@ -300,9 +366,23 @@ class DataPreparationPipeline:
 
         # =====================================================================
         # Save metadata (AGE, sex, ... from brainlink)
+        # Only persist sessions that actually had feature data loaded so that
+        # sessions whose derivatives don't exist yet are retried on the next run.
         # =====================================================================
+        loaded_keys = set()
+        for _df in (anatomical_df, diffusion_df):
+            if _df is not None and len(_df) > 0:
+                loaded_keys.update(_df[META_COLS].drop_duplicates().apply(tuple, axis=1))
+
+        if loaded_keys:
+            sessions_with_data = sessions_to_load[
+                sessions_to_load[META_COLS].apply(tuple, axis=1).isin(loaded_keys)
+            ]
+        else:
+            sessions_with_data = sessions_to_load
+
         logger.info("Saving metadata...")
-        store.save_metadata(sessions_to_load)
+        store.save_metadata(sessions_with_data)
 
         # =====================================================================
         # Generate wide-format features

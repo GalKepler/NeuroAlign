@@ -32,7 +32,13 @@ def apply_bias_correction(bag_df: pd.DataFrame, ages: np.ndarray) -> pd.DataFram
     corrected = bag_df.copy()
     for col in bag_df.columns:
         bag_vals = bag_df[col].values
-        a_matrix = np.column_stack([ages, np.ones_like(ages)])
-        coeffs, *_ = np.linalg.lstsq(a_matrix, bag_vals, rcond=None)
-        corrected[col] = bag_vals - (coeffs[0] * ages + coeffs[1])
+        valid = ~np.isnan(bag_vals)
+        if valid.sum() < 2:
+            continue
+        valid_ages = ages[valid]
+        a_matrix = np.column_stack([valid_ages, np.ones(valid.sum())])
+        coeffs, *_ = np.linalg.lstsq(a_matrix, bag_vals[valid], rcond=None)
+        corrected_vals = bag_vals.copy()
+        corrected_vals[valid] -= coeffs[0] * valid_ages + coeffs[1]
+        corrected[col] = corrected_vals
     return corrected

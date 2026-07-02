@@ -289,6 +289,40 @@ Environment variables (loaded from .env):
         action="store_true",
         help="Disable inverse probability weighting in BAG estimation",
     )
+    bag_group.add_argument(
+        "--bag-all-univariate",
+        action="store_true",
+        help=(
+            "Run univariate BAG estimation for every wide-format feature in the store. "
+            "Overrides --bag-univariate-features."
+        ),
+    )
+    bag_group.add_argument(
+        "--bag-all-multivariate",
+        action="store_true",
+        help=(
+            "Run one multivariate BAG estimation combining all wide-format features in the store. "
+            "Diffusion filtered to --bag-multivariate-diffusion-metric (default: robust_mean). "
+            "Anatomical restricted to anat_volume_mm3 (TIV-normalised) and anat_thickness_mean_mm. "
+            "Overrides --bag-multivariate-features."
+        ),
+    )
+    bag_group.add_argument(
+        "--bag-multivariate-diffusion-metric",
+        default="robust_mean",
+        metavar="METRIC",
+        help="Diffusion aggregation to use with --bag-all-multivariate (default: robust_mean)",
+    )
+    bag_group.add_argument(
+        "--bag-multivariate-tiv-normalize",
+        nargs="+",
+        default=None,
+        metavar="FEATURE",
+        help=(
+            "Feature names to divide by TIV before multivariate BAG estimation "
+            "(default when --bag-all-multivariate: anat_volume_mm3)"
+        ),
+    )
 
     return parser.parse_args()
 
@@ -321,12 +355,42 @@ def build_config(args: argparse.Namespace) -> PipelineConfig:
         "bias_correction": not args.bag_no_bias_correction,
         "ipw": not args.bag_no_ipw,
     }
-    if args.bag_univariate_features is not None:
-        bag_kwargs["univariate_features"] = args.bag_univariate_features
-    if args.bag_multivariate_features is not None:
-        bag_kwargs["multivariate_feature_sets"] = [
-            combo.split(",") for combo in args.bag_multivariate_features
-        ]
+    if getattr(args, "bag_all_univariate", False) or getattr(args, "bag_all_multivariate", False):
+        from neuroalign.data.preprocessing.feature_store import FeatureStore
+        _store = FeatureStore(args.output)
+        all_features = _store.list_features()
+        if not all_features:
+            flag = "--bag-all-univariate" if getattr(args, "bag_all_univariate", False) else "--bag-all-multivariate"
+            raise ValueError(
+                f"{flag}: no features found in store at "
+                f"{args.output}. Run the pipeline first to build the feature store."
+            )
+        if getattr(args, "bag_all_univariate", False):
+            bag_kwargs["univariate_features"] = all_features
+        if getattr(args, "bag_all_multivariate", False):
+            diff_metric = getattr(args, "bag_multivariate_diffusion_metric", "robust_mean")
+            diff_features = [
+                name for name in all_features
+                if (info := _store.get_feature_info(name))
+                and info.modality == "diffusion"
+                and info.metric == diff_metric
+            ]
+            _anat_wanted = ["anat_volume_mm3", "anat_thickness_mean_mm"]
+            anat_features = [f for f in _anat_wanted if f in all_features]
+            bag_kwargs["multivariate_feature_sets"] = [anat_features + diff_features]
+            tiv_norm = getattr(args, "bag_multivariate_tiv_normalize", None)
+            if tiv_norm is None:
+                tiv_norm = [f for f in ["anat_volume_mm3"] if f in all_features]
+            bag_kwargs["multivariate_tiv_normalize"] = tiv_norm
+    else:
+        if args.bag_univariate_features is not None:
+            bag_kwargs["univariate_features"] = args.bag_univariate_features
+        if args.bag_multivariate_features is not None:
+            bag_kwargs["multivariate_feature_sets"] = [
+                combo.split(",") for combo in args.bag_multivariate_features
+            ]
+        if getattr(args, "bag_multivariate_tiv_normalize", None) is not None:
+            bag_kwargs["multivariate_tiv_normalize"] = args.bag_multivariate_tiv_normalize
     bag_estimation = BAGEstimationConfig(**bag_kwargs)
 
     return PipelineConfig(

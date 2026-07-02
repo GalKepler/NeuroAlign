@@ -112,7 +112,13 @@ class TabularDerivativesLoader:
         if not csv_files:
             return None
 
-        df = pd.read_csv(csv_files[0])
+        try:
+            df = pd.read_csv(csv_files[0])
+        except Exception as exc:
+            logger.warning("Skipping %s: %s", csv_files[0], exc)
+            return None
+        if df.empty:
+            return None
         match = _STRUCTURE_RE.search(csv_files[0].name)
         df["structure"] = match.group(1) if match else None
         return df
@@ -202,7 +208,14 @@ class TabularDerivativesLoader:
 
             for tsv_file in sorted(dwi_dir.glob("*_diffmap.tsv")):
                 entities = parse_bids_entities(tsv_file.name)
-                df = pd.read_csv(tsv_file, sep="\t")
+                try:
+                    df = pd.read_csv(tsv_file, sep="\t")
+                except Exception as exc:
+                    logger.warning("Skipping %s: %s", tsv_file, exc)
+                    continue
+                if df.empty:
+                    logger.debug("Skipping empty TSV: %s", tsv_file)
+                    continue
                 df.insert(0, "session_id", session_id)
                 df.insert(0, "uid", uid)
                 df["atlas"] = self.atlas_name

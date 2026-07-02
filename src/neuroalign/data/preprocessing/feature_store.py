@@ -141,7 +141,9 @@ class FeatureInfo:
 
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> "FeatureInfo":
-        return cls(**data)
+        import dataclasses
+        known = {f.name for f in dataclasses.fields(cls)}
+        return cls(**{k: v for k, v in data.items() if k in known})
 
 
 @dataclass
@@ -358,6 +360,12 @@ class FeatureStore:
 
         name = "anatomical"
         file_path = self.long_dir / f"{name}.parquet"
+        if file_path.exists():
+            existing = pd.read_parquet(file_path)
+            if all(c in existing.columns for c in META_COLS):
+                df = pd.concat([existing, df]).drop_duplicates(subset=META_COLS + ["label"])
+            else:
+                logger.warning("Overwriting stale anatomical long file (schema mismatch): %s", file_path)
         df.to_parquet(file_path, compression=self.compression, index=False)
 
         available_metrics = [c for c in df.columns if c in ANATOMICAL_METRICS]
@@ -406,6 +414,14 @@ class FeatureStore:
         for software, sw_df in df.groupby("software"):
             name = f"diffusion_{software}"
             file_path = self.diffusion_long_dir / f"{software}.parquet"
+            if file_path.exists():
+                existing = pd.read_parquet(file_path)
+                if all(c in existing.columns for c in META_COLS):
+                    sw_df = pd.concat([existing, sw_df]).drop_duplicates(
+                        subset=META_COLS + ["label", "model", "param", "desc"]
+                    )
+                else:
+                    logger.warning("Overwriting stale diffusion long file (schema mismatch): %s", file_path)
             sw_df.to_parquet(file_path, compression=self.compression, index=False)
 
             info = LongFormatInfo(
@@ -680,6 +696,9 @@ class FeatureStore:
                 questionnaire columns (e.g. from `BehavioralLoader.get_sessions()`).
         """
         meta_df = df.drop_duplicates(subset=META_COLS)
+        if self.metadata_path.exists():
+            existing = pd.read_parquet(self.metadata_path)
+            meta_df = pd.concat([existing, meta_df]).drop_duplicates(subset=META_COLS)
         meta_df.to_parquet(self.metadata_path, compression=self.compression, index=False)
         logger.info(f"Saved metadata: {len(meta_df)} sessions")
 
@@ -783,12 +802,25 @@ class FeatureStore:
     # -------------------------------------------------------------------------
 
     def get_existing_sessions(self) -> pd.DataFrame:
-        """Get all (uid, session_id) pairs in the store."""
-        if not self.metadata_path.exists():
-            return pd.DataFrame(columns=META_COLS)
+        """Get all (uid, session_id) pairs that have actual feature data in the store."""
+        dfs = []
+        paths = []
+        anat_path = self.long_dir / "anatomical.parquet"
+        if anat_path.exists():
+            paths.append(anat_path)
+        if self.diffusion_long_dir.exists():
+            paths.extend(self.diffusion_long_dir.glob("*.parquet"))
 
-        meta = pd.read_parquet(self.metadata_path)
-        return meta[META_COLS].drop_duplicates()
+        for p in paths:
+            try:
+                dfs.append(pd.read_parquet(p, columns=META_COLS))
+            except Exception:
+                # File uses an old schema (e.g. subject_code instead of uid) — skip it.
+                logger.debug("Skipping stale parquet (schema mismatch): %s", p)
+
+        if not dfs:
+            return pd.DataFrame(columns=META_COLS)
+        return pd.concat(dfs).drop_duplicates(subset=META_COLS).reset_index(drop=True)
 
     # -------------------------------------------------------------------------
     # Summary
