@@ -1,0 +1,17 @@
+{
+  "splits": "group_kfold",
+  "n_splits": 5,
+  "model_type": "ridge",
+  "polynomial_degree": 2,
+  "bias_correction": true,
+  "ipw": true,
+  "ipw_bandwidth": 2.0,
+  "random_state": 42,
+  "n_jobs": -1,
+  "progress": true,
+  "age_col": "AGE",
+  "sex_col": "sex",
+  "tiv_col": "tiv",
+  "subject_col": "subject_code",
+  "session_col": "session_id"
+}

@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>NeuroAlign Brain Explorer</title>
+  <style>
+    /* Layout pattern from niivue's own demos (demos/features/niivue.css) - flex
+       header/main/footer with an absolutely-positioned, JS-resized canvas filling
+       `main`. This is what makes their demos fill the viewport properly; a fixed
+       vh-height canvas (the previous version here) renders cramped by comparison. */
+    html { height: auto; min-height: 100%; margin: 0; }
+    body {
+      display: flex; flex-direction: column; margin: 0; min-height: 100%; width: 100%;
+      position: absolute; font-family: system-ui, Arial, Helvetica, sans-serif;
+      color: white; background: #404040;
+    }
+    header { margin: 10px; display: flex; gap: 16px; align-items: center; flex-wrap: wrap; }
+    header .sep { width: 1px; height: 22px; background: #666; }
+    main { display: flex; flex: 1; background: #000000; position: relative; min-height: 0; }
+    #viewport { flex: 1; position: relative; }
+    canvas { position: absolute; cursor: crosshair; }
+    canvas:focus { outline: 0px; }
+    label { display: flex; align-items: center; gap: 6px; }
+    input[type="text"] { background: #222; border: 1px solid #666; color: white; padding: 4px 8px; border-radius: 4px; }
+    button { background: #3b5ea5; border: none; color: white; padding: 5px 12px; border-radius: 4px; cursor: pointer; }
+    button:hover { background: #4a71c4; }
+    .error-text { color: #f87171; font-size: 13px; }
+    .legend { font-size: 12px; color: #ccc; display: flex; align-items: center; gap: 6px; }
+    .legend .swatch { display: inline-block; width: 10px; height: 10px; border-radius: 50%; }
+    .legend .neg { background: #3b82f6; }
+    .legend .pos { background: #ef4444; }
+    #metaHeader { font-size: 13px; color: #ccc; margin: 2px 10px 0; }
+
+    #panel {
+      width: 300px; flex-shrink: 0; overflow-y: auto; padding: 14px;
+      background: #2b2b2b; border-left: 1px solid #555; font-size: 14px;
+    }
+    #panel h2 { margin: 0 0 4px; font-size: 17px; }
+    #panel .subtitle { color: #aaa; margin: 0 0 12px; font-size: 12px; }
+    .placeholder { color: #888; }
+    .badges { display: flex; gap: 6px; margin: 8px 0; flex-wrap: wrap; }
+    .badge { padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: 600; }
+    .badge.driver { background: #b45309; color: white; }
+    .badge.deviant { background: #b91c1c; color: white; }
+    .metric-row { margin: 10px 0; }
+    .metric-row .value { font-size: 20px; font-weight: 600; }
+    .pct-bar { position: relative; height: 8px; background: #555; border-radius: 4px; margin-top: 6px; }
+    .pct-bar .marker {
+      position: absolute; top: -3px; width: 3px; height: 14px; background: #fff;
+      transform: translateX(-1.5px);
+    }
+    .pct-bar .zone { position: absolute; top: 0; height: 100%; background: rgba(185,28,28,0.35); }
+    #panel h3 { margin: 14px 0 6px; font-size: 13px; color: #ccc; text-transform: uppercase; }
+    .term-list { display: flex; flex-wrap: wrap; gap: 4px; }
+    .term { background: #444; padding: 2px 6px; border-radius: 4px; font-size: 12px; }
+    .study-list { list-style: none; margin: 0; padding: 0; }
+    .study-list li { margin: 2px 0; }
+    .study-list a { color: #7dd3fc; font-size: 12px; }
+  </style>
+</head>
+<body>
+  <header>
+    <label>
+      Subject code:
+      <input id="subjectCode" type="text" placeholder="e.g. 0336" />
+    </label>
+    <button id="loadSubjectBtn">Load</button>
+    <label id="sessionPickerWrap" style="display:none">
+      Session:
+      <select id="sessionPicker"></select>
+    </label>
+    <span id="loadError" class="error-text"></span>
+    <div class="sep"></div>
+    <label>
+      Layer:
+      <select id="layer" disabled>
+        <option value="bag" selected>Regional BAG</option>
+        <option value="contribution">Contribution to overall BAG</option>
+      </select>
+    </label>
+    <label>
+      |value| threshold: <span id="thresholdValue">0.00</span>
+      <input id="threshold" type="range" min="0" max="2.5" step="0.05" value="0" disabled />
+    </label>
+    <span class="legend"><span class="swatch neg"></span>younger &lt;-&gt; older<span class="swatch pos"></span> (fixed range, ±2.5)</span>
+  </header>
+  <div id="metaHeader"></div>
+  <main>
+    <div id="viewport"><canvas id="canvas"></canvas></div>
+    <aside id="panel"><p class="placeholder">Load a subject, then click a region to inspect it.</p></aside>
+  </main>
+
+  <script type="module">
+    import { Niivue, NVImage, SHOW_RENDER } from "https://unpkg.com/@niivue/niivue@0.57.0/dist/index.js";
+
+    // Fixed diverging colormap range, matching src/neuroalign/visualization/brain.py
+    // conventions (RdBu_r-ish, vmax=2.5) - NOT rescaled per participant.
+    const VMAX = 2.5;
+
+    // ZERO_TO_MAX_TRANSPARENT_BELOW_MIN: voxels with |value| < cal_min render
+    // transparent. NaN voxels (everything outside the 432 labeled regions) compare
+    // false against cal_min in the shader and fall into the same transparent
+    // branch, so the overlay only ever covers the labeled regions.
+    const COLORMAP_TYPE_ZERO_TO_MAX_TRANSPARENT_BELOW_MIN = 1;
+
+    const ATLAS_URL =
+      "../assets/atlas/atlas-Schaefer2018N400n7Tian2020S2_space-MNI152NLin2009cAsym_res-01_dseg.nii.gz";
+
+    async function main() {
+      const reference = await fetch("../assets/region_reference.json").then((r) => r.json());
+      const indexToName = {};
+      for (const [name, info] of Object.entries(reference)) indexToName[info.index] = name;
+
+      let demo = null; // current session's data, set by loadSession()
+
+      // Matches niivue's own demos/features/ui.html configuration: multiplanar
+      // view + always-visible 3D render panel, colorbar, 3D crosshair.
+      const nv = new Niivue({ show3Dcrosshair: true });
+      nv.opts.isColorbar = true;
+      nv.opts.multiplanarShowRender = SHOW_RENDER.ALWAYS;
+      await nv.attachTo("canvas");
+      nv.setSliceType(nv.sliceTypeMultiplanar);
+      nv.setRenderAzimuthElevation(120, 10);
+
+      // Base anatomy + the atlas label volume (opacity 0 - loaded purely so we can
+      // read its per-voxel integer labels for click resolution and as the
+      // geometry template for the value overlay we build client-side below).
+      // Loaded once at startup, independent of which subject is selected.
+      await nv.loadVolumes([
+        { url: "https://niivue.github.io/niivue-demo-images/mni152.nii.gz", colorbarVisible: false },
+        { url: ATLAS_URL, opacity: 0, colorbarVisible: false },
+      ]);
+      const dsegVol = nv.volumes[1];
+      const rawLabels = dsegVol.img.slice(); // native voxel-order label ints, frozen copy
+
+      // Client-side overlay: clone the dseg volume's geometry (NVImage.zerosLike),
+      // cast to float32, then remap every voxel's label -> this participant's
+      // region value for the selected layer. No per-participant .nii.gz shipped.
+      function buildOverlay(layerKey, threshold) {
+        const overlay = NVImage.zerosLike(dsegVol, "float32");
+        const valueByIndex = new Map();
+        for (const [name, r] of Object.entries(demo.regions)) {
+          valueByIndex.set(reference[name].index, r[layerKey]);
+        }
+        for (let i = 0; i < rawLabels.length; i++) {
+          const v = valueByIndex.get(rawLabels[i]);
+          overlay.img[i] = v === undefined ? NaN : v;
+        }
+        overlay.name = `regional_${layerKey}`;
+        overlay.colormap = "red";
+        overlay.colormapNegative = "blue";
+        overlay.cal_min = threshold;
+        overlay.cal_max = VMAX;
+        overlay.cal_minNeg = threshold;
+        overlay.cal_maxNeg = VMAX;
+        overlay.colormapType = COLORMAP_TYPE_ZERO_TO_MAX_TRANSPARENT_BELOW_MIN;
+        return overlay;
+      }
+
+      function loadLayer(layerKey) {
+        if (!demo) return;
+        const threshold = parseFloat(document.getElementById("threshold").value);
+        if (nv.volumes.length > 2) nv.removeVolumeByIndex(2);
+        nv.addVolume(buildOverlay(layerKey, threshold));
+      }
+
+      function applyThreshold(threshold) {
+        if (!demo) return;
+        const overlay = nv.volumes[2];
+        overlay.cal_min = threshold;
+        overlay.cal_minNeg = threshold;
+        nv.updateGLVolume();
+      }
+
+      function renderMetaHeader() {
+        const m = demo.meta;
+        const bits = [`Subject ${m.subject_code ?? demo.uid}`, `overall BAG: ${demo.bag.toFixed(2)} yrs`];
+        if (m.age != null) bits.push(`age ${m.age.toFixed(1)}`);
+        if (m.sex) bits.push(m.sex);
+        if (m.scan_date) bits.push(m.scan_date + (m.scan_tag && m.scan_tag !== "None" ? ` (${m.scan_tag})` : ""));
+        document.getElementById("metaHeader").textContent = bits.join(" · ");
+      }
+
+      // --- Panel rendering (plan §4 order: name -> BAG+percentile -> badges -> literature) ---
+      function renderPanel(name) {
+        const panel = document.getElementById("panel");
+        if (!demo || !name || !(name in demo.regions)) {
+          panel.innerHTML = '<p class="placeholder">Click a region to inspect it.</p>';
+          return;
+        }
+        const info = reference[name];
+        const r = demo.regions[name];
+        const badges =
+          (r.driver ? '<span class="badge driver">Driver</span>' : "") +
+          (r.deviant ? '<span class="badge deviant">Deviant</span>' : "");
+        const terms = info.terms.length
+          ? `<div class="term-list">${info.terms.map((t) => `<span class="term">${t.term}</span>`).join("")}</div>`
+          : '<p class="placeholder">No associated literature for this region.</p>';
+        const studies = info.terms.length
+          ? `<ul class="study-list">${info.studies
+              .map((s) => `<li><a href="${s.url}" target="_blank" rel="noopener">PMID ${s.pmid}</a></li>`)
+              .join("")}</ul>`
+          : "";
+        panel.innerHTML = `
+          <h2>${info.plain_name}</h2>
+          <p class="subtitle">${info.structure} · ${info.network ?? "—"}</p>
+          <div class="badges">${badges}</div>
+          <div class="metric-row">
+            <div class="value">BAG ${r.bag.toFixed(2)} yrs</div>
+            <div class="pct-bar">
+              <div class="zone" style="left:0%; width:5%;"></div>
+              <div class="zone" style="left:95%; width:5%;"></div>
+              <div class="marker" style="left:${r.percentile}%;"></div>
+            </div>
+            <small>cohort percentile: ${r.percentile.toFixed(1)}</small>
+          </div>
+          <h3>Neurosynth terms</h3>
+          ${terms}
+          ${studies ? `<h3>Studies</h3>${studies}` : ""}
+          <button id="explainBtn" type="button">Explain this region</button>
+          <div id="explainOutput"></div>
+        `;
+        document.getElementById("explainBtn").addEventListener("click", () => explainRegion(name));
+      }
+
+      async function explainRegion(name) {
+        const btn = document.getElementById("explainBtn");
+        const out = document.getElementById("explainOutput");
+        btn.disabled = true;
+        out.textContent = "Generating explanation…";
+        try {
+          const res = await fetch(`/api/interpretation/${demo.uid}/${demo.session_id}/${encodeURIComponent(name)}`);
+          if (!res.ok) {
+            const body = await res.json().catch(() => null);
+            out.textContent = body?.detail ?? "Could not generate an explanation.";
+            return;
+          }
+          const data = await res.json();
+          out.textContent = data.paragraph;
+        } catch {
+          out.textContent = "Could not generate an explanation.";
+        } finally {
+          btn.disabled = false;
+        }
+      }
+
+      async function loadSession(uid, sessionId) {
+        document.getElementById("loadError").textContent = "";
+        document.getElementById("metaHeader").textContent = "Loading…";
+        const res = await fetch(`/api/session/${uid}/${sessionId}`);
+        if (!res.ok) {
+          document.getElementById("metaHeader").textContent = "";
+          document.getElementById("loadError").textContent = "Could not load that session.";
+          return;
+        }
+        demo = await res.json();
+        document.getElementById("layer").disabled = false;
+        document.getElementById("threshold").disabled = false;
+        document.getElementById("layer").value = "bag";
+        renderMetaHeader();
+        loadLayer("bag");
+        renderPanel(null);
+      }
+
+      async function loadSubject(subjectCode) {
+        const errEl = document.getElementById("loadError");
+        const pickerWrap = document.getElementById("sessionPickerWrap");
+        const picker = document.getElementById("sessionPicker");
+        errEl.textContent = "";
+        pickerWrap.style.display = "none";
+        const res = await fetch(`/api/subject/${encodeURIComponent(subjectCode)}`);
+        if (!res.ok) {
+          const body = await res.json().catch(() => null);
+          errEl.textContent = body?.detail ?? "Subject code not found.";
+          return;
+        }
+        const sessions = await res.json();
+        if (sessions.length === 1) {
+          await loadSession(sessions[0].uid, sessions[0].session_id);
+          return;
+        }
+        // Multiple sessions: mirror app/main.py - selectbox defaulting to the
+        // most recent (sessions are sorted oldest -> newest by the API).
+        picker.innerHTML = sessions
+          .map((s) => `<option value="${s.uid}|${s.session_id}">${s.scan_date ?? s.session_id}${s.scan_tag ? " (" + s.scan_tag + ")" : ""}</option>`)
+          .join("");
+        picker.selectedIndex = sessions.length - 1;
+        pickerWrap.style.display = "";
+        const [uid, sessionId] = picker.value.split("|");
+        await loadSession(uid, sessionId);
+      }
+
+      // Click/crosshair -> region resolution. data.values is one entry per loaded
+      // volume, in nv.volumes order; find the dseg volume's entry by id and use
+      // its (mm-resolved) integer label to look up the region name.
+      nv.onLocationChange = (data) => {
+        if (!demo) return;
+        const entry = data.values.find((v) => v.id === dsegVol.id);
+        if (!entry || !Number.isFinite(entry.value)) {
+          renderPanel(null);
+          return;
+        }
+        const label = Math.round(entry.value);
+        renderPanel(label > 0 ? indexToName[label] : null);
+      };
+
+      document.getElementById("layer").addEventListener("change", (e) => loadLayer(e.target.value));
+      document.getElementById("threshold").addEventListener("input", (e) => {
+        const threshold = parseFloat(e.target.value);
+        document.getElementById("thresholdValue").textContent = threshold.toFixed(2);
+        applyThreshold(threshold);
+      });
+      document.getElementById("sessionPicker").addEventListener("change", (e) => {
+        const [uid, sessionId] = e.target.value.split("|");
+        loadSession(uid, sessionId);
+      });
+      document.getElementById("loadSubjectBtn").addEventListener("click", () => {
+        const code = document.getElementById("subjectCode").value.trim();
+        if (code) loadSubject(code);
+      });
+      document.getElementById("subjectCode").addEventListener("keydown", (e) => {
+        if (e.key === "Enter") document.getElementById("loadSubjectBtn").click();
+      });
+    }
+
+    main().catch((err) => {
+      document.getElementById("loadError").textContent = "Error: " + err.message;
+      console.error(err);
+    });
+  </script>
+</body>
+</html>

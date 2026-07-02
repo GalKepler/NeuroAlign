@@ -1,0 +1,3038 @@
+{
+  "uid": "S909892",
+  "session_id": "202409041725",
+  "bag": 7.828673603999558,
+  "meta": {
+    "subject_code": "CLM_L_81",
+    "scan_date": "2024-09-04",
+    "scan_tag": "Pre",
+    "age": 26.33,
+    "sex": "Female"
+  },
+  "regions": {
+    "LH_Cont_Cing_1": {
+      "bag": -0.8324602338604734,
+      "contribution": -0.06784773752989222,
+      "percentile": 37.7,
+      "driver": false,
+      "deviant": false
+    },
+    "LH_Cont_Cing_2": {
+      "bag": -2.876540250853491,
+      "contribution": -0.25257553835625085,
+      "percentile": 14.3,
+      "driver": false,
+      "deviant": false
+    },
+    "LH_Cont_OFC_1": {
+      "bag": -1.4295287274715456,
+      "contribution": -0.1558264994102031,
+      "percentile": 10.0,
+      "driver": false,
+      "deviant": false
+    },
+    "LH_Cont_PFCl_1": {
+      "bag": 6.420885319181039,
+      "contribution": 0.08926552591676493,
+      "percentile": 78.9,
+      "driver": false,
+      "deviant": false
+    },
+    "LH_Cont_PFCl_2": {
+      "bag": 15.999715578588738,
+      "contribution": 0.8743022111937097,
+      "percentile": 99.2,
+      "driver": false,
+      "deviant": true
+    },
+    "LH_Cont_PFCl_3": {
+      "bag": 8.53412301540357,
+      "contribution": -0.31993336888965834,
+      "percentile": 96.4,
+      "driver": false,
+      "deviant": true
+    },
+    "LH_Cont_PFCl_4": {
+      "bag": -13.628254181834087,
+      "contribution": 1.8122023584071607,
+      "percentile": 0.2,
+      "driver": true,
+      "deviant": true
+    },
+    "LH_Cont_PFCl_5": {
+      "bag": 2.5828029821830363,
+      "contribution": -0.03293138373489847,
+      "percentile": 66.7,
+      "driver": false,
+      "deviant": false
+    },
+    "LH_Cont_PFCl_6": {
+      "bag": 22.560973448439395,
+      "contribution": -0.523598456091315,
+      "percentile": 99.9,
+      "driver": false,
+      "deviant": true
+    },
+    "LH_Cont_PFCl_7": {
+      "bag": 21.06105962694398,
+      "contribution": 1.2885702653495907,
+      "percentile": 99.3,
+      "driver": false,
+      "deviant": true
+    },
+    "LH_Cont_PFCl_8": {
+      "bag": 6.556697477255312,
+      "contribution": 0.367927444931636,
+      "percentile": 88.3,
+      "driver": false,
+      "deviant": false
+    },
+    "LH_Cont_PFCmp_1": {
+      "bag": 19.199083172696668,
+      "contribution": -0.4040362578230274,
+      "percentile": 99.6,
+      "driver": false,
+      "deviant": true
+    },
+    "LH_Cont_PFCv_1": {
+      "bag": 8.390639795848791,
+      "contribution": 0.8771752962568042,
+      "percentile": 93.3,
+      "driver": false,
+      "deviant": false
+    },
+    "LH_Cont_Par_1": {
+      "bag": -0.7885009714018274,
+      "contribution": 0.01476667902745114,
+      "percentile": 38.0,
+      "driver": false,
+      "deviant": false
+    },
+    "LH_Cont_Par_2": {
+      "bag": 9.48229156800815,
+      "contribution": -0.6776156017215579,
+      "percentile": 99.0,
+      "driver": false,
+      "deviant": true
+    },
+    "LH_Cont_Par_3": {
+      "bag": 6.493310128259971,
+      "contribution": 0.45027089134371445,
+      "percentile": 91.6,
+      "driver": false,
+      "deviant": false
+    },
+    "LH_Cont_Par_4": {
+      "bag": 12.519455238056683,
+      "contribution": 0.06035259573782567,
+      "percentile": 98.2,
+      "driver": false,
+      "deviant": true
+    },
+    "LH_Cont_Par_5": {
+      "bag": 10.789408109270294,
+      "contribution": -0.8027366200035764,
+      "percentile": 96.8,
+      "driver": false,
+      "deviant": true
+    },
+    "LH_Cont_Par_6": {
+      "bag": 5.343441334589169,
+      "contribution": 0.02115430493572769,
+      "percentile": 90.8,
+      "driver": false,
+      "deviant": false
+    },
+    "LH_Cont_Temp_1": {
+      "bag": 11.41883425347979,
+      "contribution": -0.24216930977750492,
+      "percentile": 96.4,
+      "driver": false,
+      "deviant": true
+    },
+    "LH_Cont_pCun_1": {
+      "bag": 10.91827582168267,
+      "contribution": 0.2532225712798475,
+      "percentile": 96.5,
+      "driver": false,
+      "deviant": true
+    },
+    "LH_Cont_pCun_2": {
+      "bag": 4.020289292250542,
+      "contribution": -0.13449091609804903,
+      "percentile": 77.6,
+      "driver": false,
+      "deviant": false
+    },
+    "LH_Default_PFC_1": {
+      "bag": 0.4263940961713253,
+      "contribution": 0.0020444745856446475,
+      "percentile": 52.6,
+      "driver": false,
+      "deviant": false
+    },
+    "LH_Default_PFC_10": {
+      "bag": 16.83450984183606,
+      "contribution": 0.3804805929146054,
+      "percentile": 99.6,
+      "driver": false,
+      "deviant": true
+    },
+    "LH_Default_PFC_11": {
+      "bag": 2.0179737934476343,
+      "contribution": -0.05439635531218591,
+      "percentile": 66.4,
+      "driver": false,
+      "deviant": false
+    },
+    "LH_Default_PFC_12": {
+      "bag": 6.104926516294963,
+      "contribution": -0.1664862076366706,
+      "percentile": 82.0,
+      "driver": false,
+      "deviant": false
+    },
+    "LH_Default_PFC_13": {
+      "bag": 17.71737274171176,
+      "contribution": 0.1810716106298549,
+      "percentile": 99.3,
+      "driver": false,
+      "deviant": true
+    },
+    "LH_Default_PFC_14": {
+      "bag": -6.217190566534136,
+      "contribution": -0.11290891671108952,
+      "percentile": 17.8,
+      "driver": false,
+      "deviant": false
+    },
+    "LH_Default_PFC_15": {
+      "bag": -1.498314474613931,
+      "contribution": 0.2480018566692784,
+      "percentile": 9.5,
+      "driver": false,
+      "deviant": false
+    },
+    "LH_Default_PFC_16": {
+      "bag": -1.2825258255685235,
+      "contribution": -0.14457477645143807,
+      "percentile": 27.1,
+      "driver": false,
+      "deviant": false
+    },
+    "LH_Default_PFC_17": {
+      "bag": 19.881864800246518,
+      "contribution": -0.36205483908820824,
+      "percentile": 99.5,
+      "driver": false,
+      "deviant": true
+    },
+    "LH_Default_PFC_18": {
+      "bag": 12.68919245979312,
+      "contribution": 0.05916945435306699,
+      "percentile": 97.8,
+      "driver": false,
+      "deviant": true
+    },
+    "LH_Default_PFC_19": {
+      "bag": -0.06826053534549104,
+      "contribution": -0.001134768378167648,
+      "percentile": 46.8,
+      "driver": false,
+      "deviant": false
+    },
+    "LH_Default_PFC_2": {
+      "bag": -1.318268590730593,
+      "contribution": 0.01448663347581712,
+      "percentile": 21.7,
+      "driver": false,
+      "deviant": false
+    },
+    "LH_Default_PFC_20": {
+      "bag": -0.10980470708981471,
+      "contribution": 0.016569228440713464,
+      "percentile": 38.1,
+      "driver": false,
+      "deviant": false
+    },
+    "LH_Default_PFC_21": {
+      "bag": 3.8407965480042385,
+      "contribution": 0.002602345112607635,
+      "percentile": 76.2,
+      "driver": false,
+      "deviant": false
+    },
+    "LH_Default_PFC_22": {
+      "bag": -3.3326209490409795,
+      "contribution": 0.20998519077084526,
+      "percentile": 12.2,
+      "driver": false,
+      "deviant": false
+    },
+    "LH_Default_PFC_23": {
+      "bag": 6.2283356125585385,
+      "contribution": -0.018566869541884013,
+      "percentile": 85.0,
+      "driver": false,
+      "deviant": false
+    },
+    "LH_Default_PFC_24": {
+      "bag": -3.4710986335427094,
+      "contribution": 0.19358495528622657,
+      "percentile": 25.8,
+      "driver": false,
+      "deviant": false
+    },
+    "LH_Default_PFC_3": {
+      "bag": 3.4665859743033742,
+      "contribution": -0.1000004698705044,
+      "percentile": 73.8,
+      "driver": false,
+      "deviant": false
+    },
+    "LH_Default_PFC_4": {
+      "bag": -7.790012939416002,
+      "contribution": -0.7276572048249587,
+      "percentile": 12.9,
+      "driver": false,
+      "deviant": false
+    },
+    "LH_Default_PFC_5": {
+      "bag": -13.896410375347443,
+      "contribution": -0.05435180052731415,
+      "percentile": 2.1,
+      "driver": false,
+      "deviant": true
+    },
+    "LH_Default_PFC_6": {
+      "bag": -1.311967321889746,
+      "contribution": 0.5249983738804946,
+      "percentile": 15.0,
+      "driver": false,
+      "deviant": false
+    },
+    "LH_Default_PFC_7": {
+      "bag": -2.6454147735360927,
+      "contribution": 0.1736056320019078,
+      "percentile": 32.3,
+      "driver": false,
+      "deviant": false
+    },
+    "LH_Default_PFC_8": {
+      "bag": -4.2153745012975214,
+      "contribution": 0.08890447526201077,
+      "percentile": 20.2,
+      "driver": false,
+      "deviant": false
+    },
+    "LH_Default_PFC_9": {
+      "bag": -9.285510296424135,
+      "contribution": 0.26210475350426377,
+      "percentile": 7.0,
+      "driver": false,
+      "deviant": false
+    },
+    "LH_Default_Par_1": {
+      "bag": 16.98815116452767,
+      "contribution": -0.05822075763815542,
+      "percentile": 98.6,
+      "driver": false,
+      "deviant": true
+    },
+    "LH_Default_Par_2": {
+      "bag": 20.487204852947816,
+      "contribution": -0.3874936516072542,
+      "percentile": 99.8,
+      "driver": false,
+      "deviant": true
+    },
+    "LH_Default_Par_3": {
+      "bag": 30.57604829128809,
+      "contribution": -1.3374822716566492,
+      "percentile": 99.9,
+      "driver": false,
+      "deviant": true
+    },
+    "LH_Default_Par_4": {
+      "bag": 12.491522520183732,
+      "contribution": 0.28038030088025306,
+      "percentile": 98.4,
+      "driver": false,
+      "deviant": true
+    },
+    "LH_Default_Par_5": {
+      "bag": 20.338988852493095,
+      "contribution": 1.571801177499807,
+      "percentile": 99.9,
+      "driver": false,
+      "deviant": true
+    },
+    "LH_Default_Par_6": {
+      "bag": 4.466614075110517,
+      "contribution": 0.032360364272916955,
+      "percentile": 89.1,
+      "driver": false,
+      "deviant": false
+    },
+    "LH_Default_Par_7": {
+      "bag": 17.16154028656336,
+      "contribution": 0.04736894515034046,
+      "percentile": 99.2,
+      "driver": false,
+      "deviant": true
+    },
+    "LH_Default_Temp_1": {
+      "bag": 3.5239205507175164,
+      "contribution": 0.048055233628447006,
+      "percentile": 76.5,
+      "driver": false,
+      "deviant": false
+    },
+    "LH_Default_Temp_10": {
+      "bag": 1.0934059188088519,
+      "contribution": 0.006548702772000651,
+      "percentile": 60.2,
+      "driver": false,
+      "deviant": false
+    },
+    "LH_Default_Temp_2": {
+      "bag": -0.8754319335131449,
+      "contribution": 0.11052862904794855,
+      "percentile": 36.2,
+      "driver": false,
+      "deviant": false
+    },
+    "LH_Default_Temp_3": {
+      "bag": 9.886396641234672,
+      "contribution": 0.6152632918044219,
+      "percentile": 96.5,
+      "driver": false,
+      "deviant": true
+    },
+    "LH_Default_Temp_4": {
+      "bag": 6.879790363969473,
+      "contribution": 0.9295297223133038,
+      "percentile": 95.4,
+      "driver": false,
+      "deviant": true
+    },
+    "LH_Default_Temp_5": {
+      "bag": 24.822467287994087,
+      "contribution": 0.39320153416746795,
+      "percentile": 99.8,
+      "driver": false,
+      "deviant": true
+    },
+    "LH_Default_Temp_6": {
+      "bag": 6.6127244977589505,
+      "contribution": 0.1867442486903208,
+      "percentile": 82.0,
+      "driver": false,
+      "deviant": false
+    },
+    "LH_Default_Temp_7": {
+      "bag": 15.18511418329173,
+      "contribution": 0.19551025029891586,
+      "percentile": 98.3,
+      "driver": false,
+      "deviant": true
+    },
+    "LH_Default_Temp_8": {
+      "bag": 10.101484904578829,
+      "contribution": -0.5743716602191057,
+      "percentile": 98.9,
+      "driver": false,
+      "deviant": true
+    },
+    "LH_Default_Temp_9": {
+      "bag": 19.302612564103512,
+      "contribution": -0.3839973056519257,
+      "percentile": 99.6,
+      "driver": false,
+      "deviant": true
+    },
+    "LH_Default_pCunPCC_1": {
+      "bag": -6.678923582199921,
+      "contribution": -0.0764910031695319,
+      "percentile": 10.9,
+      "driver": false,
+      "deviant": false
+    },
+    "LH_Default_pCunPCC_10": {
+      "bag": 2.0379261957730037,
+      "contribution": 0.05497203120194784,
+      "percentile": 61.0,
+      "driver": false,
+      "deviant": false
+    },
+    "LH_Default_pCunPCC_11": {
+      "bag": 0.13254587674557783,
+      "contribution": -0.008729221331542034,
+      "percentile": 47.1,
+      "driver": false,
+      "deviant": false
+    },
+    "LH_Default_pCunPCC_2": {
+      "bag": -1.083511849724811,
+      "contribution": 0.0155047641297514,
+      "percentile": 35.7,
+      "driver": false,
+      "deviant": false
+    },
+    "LH_Default_pCunPCC_3": {
+      "bag": 6.224499470520765,
+      "contribution": -0.42574715104548055,
+      "percentile": 86.2,
+      "driver": false,
+      "deviant": false
+    },
+    "LH_Default_pCunPCC_4": {
+      "bag": -7.765002943637789,
+      "contribution": 0.2248903679424767,
+      "percentile": 9.3,
+      "driver": false,
+      "deviant": false
+    },
+    "LH_Default_pCunPCC_5": {
+      "bag": 2.829661697831355,
+      "contribution": 0.43096538199917533,
+      "percentile": 80.8,
+      "driver": false,
+      "deviant": false
+    },
+    "LH_Default_pCunPCC_6": {
+      "bag": -2.133102727664607,
+      "contribution": 0.12448370353033346,
+      "percentile": 33.1,
+      "driver": false,
+      "deviant": false
+    },
+    "LH_Default_pCunPCC_7": {
+      "bag": -12.921210590205757,
+      "contribution": -0.16469012810731187,
+      "percentile": 2.9,
+      "driver": false,
+      "deviant": true
+    },
+    "LH_Default_pCunPCC_8": {
+      "bag": -18.583789233437116,
+      "contribution": 0.9873321730170981,
+      "percentile": 0.9,
+      "driver": false,
+      "deviant": true
+    },
+    "LH_Default_pCunPCC_9": {
+      "bag": -30.076576770961616,
+      "contribution": 1.6509678533141674,
+      "percentile": 0.0,
+      "driver": false,
+      "deviant": true
+    },
+    "LH_DorsAttn_FEF_1": {
+      "bag": -1.2018283256208413,
+      "contribution": -0.16316613992183213,
+      "percentile": 38.5,
+      "driver": false,
+      "deviant": false
+    },
+    "LH_DorsAttn_FEF_2": {
+      "bag": -1.4360670536863722,
+      "contribution": 0.8891965399225168,
+      "percentile": 9.9,
+      "driver": false,
+      "deviant": false
+    },
+    "LH_DorsAttn_FEF_3": {
+      "bag": -3.842030159042327,
+      "contribution": -0.4452288185834872,
+      "percentile": 5.4,
+      "driver": false,
+      "deviant": false
+    },
+    "LH_DorsAttn_FEF_4": {
+      "bag": 2.0690397784206915,
+      "contribution": -0.2532479655464341,
+      "percentile": 70.5,
+      "driver": false,
+      "deviant": false
+    },
+    "LH_DorsAttn_Post_1": {
+      "bag": 23.31007429409941,
+      "contribution": 0.3915582677878792,
+      "percentile": 99.9,
+      "driver": false,
+      "deviant": true
+    },
+    "LH_DorsAttn_Post_10": {
+      "bag": 12.070351239785783,
+      "contribution": -0.24376637402518297,
+      "percentile": 99.3,
+      "driver": false,
+      "deviant": true
+    },
+    "LH_DorsAttn_Post_11": {
+      "bag": -16.535875072189903,
+      "contribution": 0.02118240500606341,
+      "percentile": 0.5,
+      "driver": false,
+      "deviant": true
+    },
+    "LH_DorsAttn_Post_12": {
+      "bag": -1.4907185265456064,
+      "contribution": 0.007462650496285761,
+      "percentile": 7.9,
+      "driver": false,
+      "deviant": false
+    },
+    "LH_DorsAttn_Post_13": {
+      "bag": -10.66360569638924,
+      "contribution": 1.1177990438754433,
+      "percentile": 2.3,
+      "driver": false,
+      "deviant": true
+    },
+    "LH_DorsAttn_Post_14": {
+      "bag": -1.259858745680308,
+      "contribution": -0.1283226649498174,
+      "percentile": 21.8,
+      "driver": false,
+      "deviant": false
+    },
+    "LH_DorsAttn_Post_15": {
+      "bag": 13.466528216586283,
+      "contribution": -0.491899152446793,
+      "percentile": 99.1,
+      "driver": false,
+      "deviant": true
+    },
+    "LH_DorsAttn_Post_16": {
+      "bag": 4.324296162586883,
+      "contribution": -0.3365873141526385,
+      "percentile": 85.8,
+      "driver": false,
+      "deviant": false
+    },
+    "LH_DorsAttn_Post_17": {
+      "bag": 16.08011452940038,
+      "contribution": 0.82651976348002,
+      "percentile": 99.6,
+      "driver": false,
+      "deviant": true
+    },
+    "LH_DorsAttn_Post_2": {
+      "bag": 21.964247077333305,
+      "contribution": -1.3355188040537482,
+      "percentile": 99.9,
+      "driver": false,
+      "deviant": true
+    },
+    "LH_DorsAttn_Post_3": {
+      "bag": 18.714191525058723,
+      "contribution": 0.8606147176464531,
+      "percentile": 99.7,
+      "driver": false,
+      "deviant": true
+    },
+    "LH_DorsAttn_Post_4": {
+      "bag": 28.83151018345325,
+      "contribution": -0.8233377002166328,
+      "percentile": 99.9,
+      "driver": false,
+      "deviant": true
+    },
+    "LH_DorsAttn_Post_5": {
+      "bag": -3.6633761321227674,
+      "contribution": 0.4067307696731543,
+      "percentile": 9.0,
+      "driver": false,
+      "deviant": false
+    },
+    "LH_DorsAttn_Post_6": {
+      "bag": -1.2461977464950564,
+      "contribution": 0.014828842618794686,
+      "percentile": 32.6,
+      "driver": false,
+      "deviant": false
+    },
+    "LH_DorsAttn_Post_7": {
+      "bag": 0.20701059141947198,
+      "contribution": 0.008433392219957203,
+      "percentile": 51.8,
+      "driver": false,
+      "deviant": false
+    },
+    "LH_DorsAttn_Post_8": {
+      "bag": -6.409276708645308,
+      "contribution": -0.36631437870734246,
+      "percentile": 6.4,
+      "driver": false,
+      "deviant": false
+    },
+    "LH_DorsAttn_Post_9": {
+      "bag": -1.0839611052047395,
+      "contribution": 0.16857999858999773,
+      "percentile": 44.7,
+      "driver": false,
+      "deviant": false
+    },
+    "LH_DorsAttn_PrCv_1": {
+      "bag": 8.906592646072511,
+      "contribution": 0.20348836725205058,
+      "percentile": 98.9,
+      "driver": false,
+      "deviant": true
+    },
+    "LH_DorsAttn_PrCv_2": {
+      "bag": -1.2574700276839295,
+      "contribution": -0.12830136445570203,
+      "percentile": 32.1,
+      "driver": false,
+      "deviant": false
+    },
+    "LH_Limbic_OFC_1": {
+      "bag": -1.4117207042280775,
+      "contribution": 0.005155614311514226,
+      "percentile": 26.9,
+      "driver": false,
+      "deviant": false
+    },
+    "LH_Limbic_OFC_2": {
+      "bag": -1.5118749309139794,
+      "contribution": 0.013107608920591296,
+      "percentile": 8.2,
+      "driver": false,
+      "deviant": false
+    },
+    "LH_Limbic_OFC_3": {
+      "bag": -7.0071090233432365,
+      "contribution": -0.19532727717547238,
+      "percentile": 11.5,
+      "driver": false,
+      "deviant": false
+    },
+    "LH_Limbic_OFC_4": {
+      "bag": -1.595373107742251,
+      "contribution": -0.023049508124477352,
+      "percentile": 12.0,
+      "driver": false,
+      "deviant": false
+    },
+    "LH_Limbic_OFC_5": {
+      "bag": -5.1372683414410645,
+      "contribution": 0.8859995201291923,
+      "percentile": 7.4,
+      "driver": false,
+      "deviant": false
+    },
+    "LH_Limbic_TempPole_1": {
+      "bag": -9.350889658251727,
+      "contribution": -1.2017133462873524,
+      "percentile": 4.9,
+      "driver": false,
+      "deviant": true
+    },
+    "LH_Limbic_TempPole_2": {
+      "bag": -10.45310657015209,
+      "contribution": -1.0605488220239025,
+      "percentile": 0.0,
+      "driver": false,
+      "deviant": true
+    },
+    "LH_Limbic_TempPole_3": {
+      "bag": 2.5266755714881093,
+      "contribution": 0.23940887935171512,
+      "percentile": 74.4,
+      "driver": false,
+      "deviant": false
+    },
+    "LH_Limbic_TempPole_4": {
+      "bag": 9.883355772464704,
+      "contribution": -0.6746683383596915,
+      "percentile": 99.5,
+      "driver": false,
+      "deviant": true
+    },
+    "LH_Limbic_TempPole_5": {
+      "bag": 16.791929037325634,
+      "contribution": 1.0099529416151316,
+      "percentile": 99.7,
+      "driver": false,
+      "deviant": true
+    },
+    "LH_Limbic_TempPole_6": {
+      "bag": 9.499872142069695,
+      "contribution": -1.7393254297707883,
+      "percentile": 97.7,
+      "driver": true,
+      "deviant": true
+    },
+    "LH_Limbic_TempPole_7": {
+      "bag": -1.2737929452489105,
+      "contribution": -0.3021804422853216,
+      "percentile": 25.3,
+      "driver": false,
+      "deviant": false
+    },
+    "LH_Limbic_TempPole_8": {
+      "bag": 5.99360008860511,
+      "contribution": 0.040733387804539674,
+      "percentile": 92.6,
+      "driver": false,
+      "deviant": false
+    },
+    "LH_SalVentAttn_FrOperIns_1": {
+      "bag": -1.271007492561047,
+      "contribution": -0.14199739072731507,
+      "percentile": 31.2,
+      "driver": false,
+      "deviant": false
+    },
+    "LH_SalVentAttn_FrOperIns_2": {
+      "bag": -1.7177901727487956,
+      "contribution": 0.32410108675690136,
+      "percentile": 17.5,
+      "driver": false,
+      "deviant": false
+    },
+    "LH_SalVentAttn_FrOperIns_3": {
+      "bag": -0.07993251631528864,
+      "contribution": -0.05657114419937264,
+      "percentile": 48.0,
+      "driver": false,
+      "deviant": false
+    },
+    "LH_SalVentAttn_FrOperIns_4": {
+      "bag": -1.2887731240770002,
+      "contribution": -0.14382634040342523,
+      "percentile": 25.8,
+      "driver": false,
+      "deviant": false
+    },
+    "LH_SalVentAttn_FrOperIns_5": {
+      "bag": -2.0437063375923223,
+      "contribution": 0.0018309309404024292,
+      "percentile": 17.5,
+      "driver": false,
+      "deviant": false
+    },
+    "LH_SalVentAttn_FrOperIns_6": {
+      "bag": 16.189647927243136,
+      "contribution": 0.11593232096127454,
+      "percentile": 99.9,
+      "driver": false,
+      "deviant": true
+    },
+    "LH_SalVentAttn_FrOperIns_7": {
+      "bag": -9.104309032445244,
+      "contribution": -0.2967779485158186,
+      "percentile": 4.3,
+      "driver": false,
+      "deviant": true
+    },
+    "LH_SalVentAttn_FrOperIns_8": {
+      "bag": 26.297613167479525,
+      "contribution": 1.740125572538285,
+      "percentile": 99.9,
+      "driver": true,
+      "deviant": true
+    },
+    "LH_SalVentAttn_FrOperIns_9": {
+      "bag": 7.653734654576606,
+      "contribution": -0.43100789416320595,
+      "percentile": 95.0,
+      "driver": false,
+      "deviant": true
+    },
+    "LH_SalVentAttn_Med_1": {
+      "bag": -15.227739759693968,
+      "contribution": -0.28306402660136587,
+      "percentile": 1.0,
+      "driver": false,
+      "deviant": true
+    },
+    "LH_SalVentAttn_Med_2": {
+      "bag": -24.354087497962972,
+      "contribution": -1.5233955527784255,
+      "percentile": 0.1,
+      "driver": false,
+      "deviant": true
+    },
+    "LH_SalVentAttn_Med_3": {
+      "bag": -23.226677847101637,
+      "contribution": -1.99584837230216,
+      "percentile": 0.2,
+      "driver": true,
+      "deviant": true
+    },
+    "LH_SalVentAttn_Med_4": {
+      "bag": 9.158784922796379,
+      "contribution": 0.35990775177800555,
+      "percentile": 91.1,
+      "driver": false,
+      "deviant": false
+    },
+    "LH_SalVentAttn_Med_5": {
+      "bag": 6.039607572431763,
+      "contribution": -0.41965985652826415,
+      "percentile": 85.2,
+      "driver": false,
+      "deviant": false
+    },
+    "LH_SalVentAttn_Med_6": {
+      "bag": 2.424574570042939,
+      "contribution": -0.08251533626724301,
+      "percentile": 70.4,
+      "driver": false,
+      "deviant": false
+    },
+    "LH_SalVentAttn_Med_7": {
+      "bag": -3.7489221809317215,
+      "contribution": 0.19944643133812076,
+      "percentile": 12.3,
+      "driver": false,
+      "deviant": false
+    },
+    "LH_SalVentAttn_PFCl_1": {
+      "bag": -8.956403544868529,
+      "contribution": -0.03079254806554628,
+      "percentile": 2.0,
+      "driver": false,
+      "deviant": true
+    },
+    "LH_SalVentAttn_ParOper_1": {
+      "bag": 13.418661568445415,
+      "contribution": -1.185410571507924,
+      "percentile": 96.1,
+      "driver": false,
+      "deviant": true
+    },
+    "LH_SalVentAttn_ParOper_2": {
+      "bag": 23.635276076669495,
+      "contribution": -0.5455940311637145,
+      "percentile": 99.9,
+      "driver": false,
+      "deviant": true
+    },
+    "LH_SalVentAttn_ParOper_3": {
+      "bag": 12.892381873831802,
+      "contribution": 0.1990728395373987,
+      "percentile": 95.3,
+      "driver": false,
+      "deviant": true
+    },
+    "LH_SalVentAttn_ParOper_4": {
+      "bag": 20.226199976386248,
+      "contribution": 1.2027327207145946,
+      "percentile": 99.5,
+      "driver": false,
+      "deviant": true
+    },
+    "LH_SalVentAttn_TempOcc_1": {
+      "bag": 19.008809976284304,
+      "contribution": -1.5307152734344307,
+      "percentile": 99.8,
+      "driver": false,
+      "deviant": true
+    },
+    "LH_SomMot_1": {
+      "bag": 18.89340917751479,
+      "contribution": 0.4621570658421052,
+      "percentile": 99.8,
+      "driver": false,
+      "deviant": true
+    },
+    "LH_SomMot_10": {
+      "bag": 1.4314041085827718,
+      "contribution": -0.015346739018109902,
+      "percentile": 65.4,
+      "driver": false,
+      "deviant": false
+    },
+    "LH_SomMot_11": {
+      "bag": 13.039991928263731,
+      "contribution": 0.3420838090572095,
+      "percentile": 98.2,
+      "driver": false,
+      "deviant": true
+    },
+    "LH_SomMot_12": {
+      "bag": 14.64036728071057,
+      "contribution": -0.20371881792601848,
+      "percentile": 99.9,
+      "driver": false,
+      "deviant": true
+    },
+    "LH_SomMot_13": {
+      "bag": 15.731619963336989,
+      "contribution": -0.0979851426965569,
+      "percentile": 99.3,
+      "driver": false,
+      "deviant": true
+    },
+    "LH_SomMot_14": {
+      "bag": 0.9801110508521305,
+      "contribution": 0.01926285909310038,
+      "percentile": 60.7,
+      "driver": false,
+      "deviant": false
+    },
+    "LH_SomMot_15": {
+      "bag": -7.178731927358331,
+      "contribution": -0.39955968533714586,
+      "percentile": 4.4,
+      "driver": false,
+      "deviant": true
+    },
+    "LH_SomMot_16": {
+      "bag": -7.051007663223377,
+      "contribution": -0.2851315417695071,
+      "percentile": 0.1,
+      "driver": false,
+      "deviant": true
+    },
+    "LH_SomMot_17": {
+      "bag": -1.2724281898047138,
+      "contribution": 0.34702075263077636,
+      "percentile": 17.5,
+      "driver": false,
+      "deviant": false
+    },
+    "LH_SomMot_18": {
+      "bag": -3.421759570415592,
+      "contribution": 0.10203735606139072,
+      "percentile": 25.3,
+      "driver": false,
+      "deviant": false
+    },
+    "LH_SomMot_19": {
+      "bag": -1.3055419382125457,
+      "contribution": -0.39764243500048896,
+      "percentile": 11.7,
+      "driver": false,
+      "deviant": false
+    },
+    "LH_SomMot_2": {
+      "bag": 17.063673208231535,
+      "contribution": 0.27075881727042517,
+      "percentile": 99.1,
+      "driver": false,
+      "deviant": true
+    },
+    "LH_SomMot_20": {
+      "bag": 0.07516321345156385,
+      "contribution": -0.007445866520954492,
+      "percentile": 59.2,
+      "driver": false,
+      "deviant": false
+    },
+    "LH_SomMot_21": {
+      "bag": 3.146905417026943,
+      "contribution": -0.327098893670548,
+      "percentile": 77.9,
+      "driver": false,
+      "deviant": false
+    },
+    "LH_SomMot_22": {
+      "bag": -1.2856714458448906,
+      "contribution": -0.2040023092395317,
+      "percentile": 24.9,
+      "driver": false,
+      "deviant": false
+    },
+    "LH_SomMot_23": {
+      "bag": -4.800823713238483,
+      "contribution": 0.5733329399706955,
+      "percentile": 8.7,
+      "driver": false,
+      "deviant": false
+    },
+    "LH_SomMot_24": {
+      "bag": 0.6958617845679242,
+      "contribution": -0.010215893999958963,
+      "percentile": 58.4,
+      "driver": false,
+      "deviant": false
+    },
+    "LH_SomMot_25": {
+      "bag": -1.2458336164418427,
+      "contribution": 0.14123150103337972,
+      "percentile": 22.9,
+      "driver": false,
+      "deviant": false
+    },
+    "LH_SomMot_26": {
+      "bag": -1.2674837717391867,
+      "contribution": -0.06561002888006968,
+      "percentile": 17.3,
+      "driver": false,
+      "deviant": false
+    },
+    "LH_SomMot_27": {
+      "bag": -1.3078180579906657,
+      "contribution": 0.2432168073605643,
+      "percentile": 17.6,
+      "driver": false,
+      "deviant": false
+    },
+    "LH_SomMot_28": {
+      "bag": -4.634012800643259,
+      "contribution": 0.8057009249718385,
+      "percentile": 4.5,
+      "driver": false,
+      "deviant": true
+    },
+    "LH_SomMot_29": {
+      "bag": -6.161799524782765,
+      "contribution": -0.1874421931941007,
+      "percentile": 6.0,
+      "driver": false,
+      "deviant": false
+    },
+    "LH_SomMot_3": {
+      "bag": -9.490408040702473,
+      "contribution": -0.23004784183466573,
+      "percentile": 1.1,
+      "driver": false,
+      "deviant": true
+    },
+    "LH_SomMot_30": {
+      "bag": -1.2844149744113373,
+      "contribution": 0.008085662169836874,
+      "percentile": 20.5,
+      "driver": false,
+      "deviant": false
+    },
+    "LH_SomMot_31": {
+      "bag": -0.6456141386348015,
+      "contribution": -0.06704109945537651,
+      "percentile": 33.0,
+      "driver": false,
+      "deviant": false
+    },
+    "LH_SomMot_32": {
+      "bag": -12.915311526689585,
+      "contribution": -0.16200310225364392,
+      "percentile": 1.4,
+      "driver": false,
+      "deviant": true
+    },
+    "LH_SomMot_33": {
+      "bag": -0.7151080692439464,
+      "contribution": 0.1705006102650941,
+      "percentile": 43.2,
+      "driver": false,
+      "deviant": false
+    },
+    "LH_SomMot_34": {
+      "bag": -2.607632477716404,
+      "contribution": -0.4128250995165232,
+      "percentile": 10.9,
+      "driver": false,
+      "deviant": false
+    },
+    "LH_SomMot_35": {
+      "bag": -1.0935158100303575,
+      "contribution": -0.18816402349668598,
+      "percentile": 40.0,
+      "driver": false,
+      "deviant": false
+    },
+    "LH_SomMot_36": {
+      "bag": -1.2874773683211878,
+      "contribution": -0.14495335716235774,
+      "percentile": 26.2,
+      "driver": false,
+      "deviant": false
+    },
+    "LH_SomMot_37": {
+      "bag": -19.780165728234998,
+      "contribution": -2.2577419792668167,
+      "percentile": 0.1,
+      "driver": true,
+      "deviant": true
+    },
+    "LH_SomMot_4": {
+      "bag": 7.204909611961799,
+      "contribution": -0.5415068080650957,
+      "percentile": 96.5,
+      "driver": false,
+      "deviant": true
+    },
+    "LH_SomMot_5": {
+      "bag": -5.102585419056993,
+      "contribution": 0.0473725745486691,
+      "percentile": 12.7,
+      "driver": false,
+      "deviant": false
+    },
+    "LH_SomMot_6": {
+      "bag": 6.7165320749570725,
+      "contribution": 0.0752382303774227,
+      "percentile": 91.4,
+      "driver": false,
+      "deviant": false
+    },
+    "LH_SomMot_7": {
+      "bag": -4.56119087065332,
+      "contribution": -0.14220477171177956,
+      "percentile": 21.8,
+      "driver": false,
+      "deviant": false
+    },
+    "LH_SomMot_8": {
+      "bag": 4.062861002581727,
+      "contribution": 0.15638338949704042,
+      "percentile": 73.2,
+      "driver": false,
+      "deviant": false
+    },
+    "LH_SomMot_9": {
+      "bag": 17.934806523152144,
+      "contribution": -0.7035312439194906,
+      "percentile": 99.2,
+      "driver": false,
+      "deviant": true
+    },
+    "LH_Vis_1": {
+      "bag": 12.42203226342729,
+      "contribution": 0.4705659287422354,
+      "percentile": 99.2,
+      "driver": false,
+      "deviant": true
+    },
+    "LH_Vis_10": {
+      "bag": -10.53640692255831,
+      "contribution": -0.0786139630446018,
+      "percentile": 4.0,
+      "driver": false,
+      "deviant": true
+    },
+    "LH_Vis_11": {
+      "bag": -9.280532910105165,
+      "contribution": -0.08914777644640931,
+      "percentile": 5.0,
+      "driver": false,
+      "deviant": true
+    },
+    "LH_Vis_12": {
+      "bag": -1.9844309678569303,
+      "contribution": -0.3852554419033296,
+      "percentile": 29.1,
+      "driver": false,
+      "deviant": false
+    },
+    "LH_Vis_13": {
+      "bag": -0.8137396510286159,
+      "contribution": 0.25648788780157084,
+      "percentile": 41.6,
+      "driver": false,
+      "deviant": false
+    },
+    "LH_Vis_14": {
+      "bag": 4.35607405916458,
+      "contribution": 0.21451103255284376,
+      "percentile": 82.0,
+      "driver": false,
+      "deviant": false
+    },
+    "LH_Vis_15": {
+      "bag": 0.05929845363087338,
+      "contribution": 0.00300008987765648,
+      "percentile": 58.5,
+      "driver": false,
+      "deviant": false
+    },
+    "LH_Vis_16": {
+      "bag": -18.680518178113587,
+      "contribution": -0.4016139774029502,
+      "percentile": 0.8,
+      "driver": false,
+      "deviant": true
+    },
+    "LH_Vis_17": {
+      "bag": 18.932926340920545,
+      "contribution": 0.6625553208495361,
+      "percentile": 99.5,
+      "driver": false,
+      "deviant": true
+    },
+    "LH_Vis_18": {
+      "bag": -1.2491458945465972,
+      "contribution": -0.14730857474352863,
+      "percentile": 34.2,
+      "driver": false,
+      "deviant": false
+    },
+    "LH_Vis_19": {
+      "bag": -4.230881351586877,
+      "contribution": 0.15255580462816615,
+      "percentile": 4.7,
+      "driver": false,
+      "deviant": true
+    },
+    "LH_Vis_2": {
+      "bag": 1.5339036851926018,
+      "contribution": -0.022674524388571926,
+      "percentile": 59.4,
+      "driver": false,
+      "deviant": false
+    },
+    "LH_Vis_20": {
+      "bag": -19.807548658152243,
+      "contribution": -2.0637140489832193,
+      "percentile": 0.5,
+      "driver": true,
+      "deviant": true
+    },
+    "LH_Vis_21": {
+      "bag": -9.887362342922678,
+      "contribution": 0.6785050139711609,
+      "percentile": 0.2,
+      "driver": false,
+      "deviant": true
+    },
+    "LH_Vis_22": {
+      "bag": -26.561517866535503,
+      "contribution": -0.4707048769829064,
+      "percentile": 0.0,
+      "driver": false,
+      "deviant": true
+    },
+    "LH_Vis_23": {
+      "bag": 12.08138966664077,
+      "contribution": -0.3209342284471693,
+      "percentile": 99.2,
+      "driver": false,
+      "deviant": true
+    },
+    "LH_Vis_24": {
+      "bag": -2.306537376949816,
+      "contribution": 0.7673721375640304,
+      "percentile": 9.9,
+      "driver": false,
+      "deviant": false
+    },
+    "LH_Vis_25": {
+      "bag": 2.8545771993575038,
+      "contribution": -0.5066148071919799,
+      "percentile": 74.8,
+      "driver": false,
+      "deviant": false
+    },
+    "LH_Vis_26": {
+      "bag": -5.944207283756235,
+      "contribution": -0.398646814477653,
+      "percentile": 17.2,
+      "driver": false,
+      "deviant": false
+    },
+    "LH_Vis_27": {
+      "bag": 1.4789138638854418,
+      "contribution": -0.17828385778306496,
+      "percentile": 64.1,
+      "driver": false,
+      "deviant": false
+    },
+    "LH_Vis_28": {
+      "bag": -1.2075200982155216,
+      "contribution": -0.18004810407240984,
+      "percentile": 38.0,
+      "driver": false,
+      "deviant": false
+    },
+    "LH_Vis_29": {
+      "bag": 2.524467551817409,
+      "contribution": -0.32594630308562866,
+      "percentile": 75.7,
+      "driver": false,
+      "deviant": false
+    },
+    "LH_Vis_3": {
+      "bag": 10.832919813874778,
+      "contribution": -0.1296589377118912,
+      "percentile": 96.0,
+      "driver": false,
+      "deviant": true
+    },
+    "LH_Vis_30": {
+      "bag": 0.5120195550473845,
+      "contribution": -0.045363347656562414,
+      "percentile": 53.7,
+      "driver": false,
+      "deviant": false
+    },
+    "LH_Vis_31": {
+      "bag": 4.553166905644392,
+      "contribution": -0.11414734963907171,
+      "percentile": 84.8,
+      "driver": false,
+      "deviant": false
+    },
+    "LH_Vis_4": {
+      "bag": 10.64997065484744,
+      "contribution": 0.6019403356939556,
+      "percentile": 95.0,
+      "driver": false,
+      "deviant": true
+    },
+    "LH_Vis_5": {
+      "bag": -16.192814563551956,
+      "contribution": -0.7720860396621831,
+      "percentile": 1.7,
+      "driver": false,
+      "deviant": true
+    },
+    "LH_Vis_6": {
+      "bag": 8.379321588594728,
+      "contribution": 0.08446281000713367,
+      "percentile": 91.6,
+      "driver": false,
+      "deviant": false
+    },
+    "LH_Vis_7": {
+      "bag": 13.139172481737628,
+      "contribution": 1.1294111821240869,
+      "percentile": 95.7,
+      "driver": false,
+      "deviant": true
+    },
+    "LH_Vis_8": {
+      "bag": 29.55292026158929,
+      "contribution": -0.23096690284438287,
+      "percentile": 99.9,
+      "driver": false,
+      "deviant": true
+    },
+    "LH_Vis_9": {
+      "bag": -4.2631894646962465,
+      "contribution": 0.14195741541789308,
+      "percentile": 13.6,
+      "driver": false,
+      "deviant": false
+    },
+    "NAc-core-lh": {
+      "bag": 3.9972071330297325,
+      "contribution": 0.1071355674193954,
+      "percentile": 65.0,
+      "driver": false,
+      "deviant": false
+    },
+    "NAc-core-rh": {
+      "bag": 5.173592638857322,
+      "contribution": 0.031537417726745405,
+      "percentile": 77.1,
+      "driver": false,
+      "deviant": false
+    },
+    "NAc-shell-lh": {
+      "bag": 5.465462088631398,
+      "contribution": -0.1595903373332835,
+      "percentile": 76.6,
+      "driver": false,
+      "deviant": false
+    },
+    "NAc-shell-rh": {
+      "bag": -3.69366375511769,
+      "contribution": 0.022241431380968357,
+      "percentile": 28.0,
+      "driver": false,
+      "deviant": false
+    },
+    "RH_Cont_Cing_1": {
+      "bag": -1.331097950362011,
+      "contribution": 0.4597679112654169,
+      "percentile": 17.8,
+      "driver": false,
+      "deviant": false
+    },
+    "RH_Cont_Cing_2": {
+      "bag": -1.3294362676854163,
+      "contribution": -0.02639820548010624,
+      "percentile": 24.3,
+      "driver": false,
+      "deviant": false
+    },
+    "RH_Cont_PFCl_1": {
+      "bag": -1.4670296537023724,
+      "contribution": 0.35784204649402845,
+      "percentile": 12.3,
+      "driver": false,
+      "deviant": false
+    },
+    "RH_Cont_PFCl_10": {
+      "bag": 10.176074833572375,
+      "contribution": -0.21172939157074028,
+      "percentile": 92.4,
+      "driver": false,
+      "deviant": false
+    },
+    "RH_Cont_PFCl_11": {
+      "bag": -10.395368231036517,
+      "contribution": -0.36245746913647986,
+      "percentile": 0.8,
+      "driver": false,
+      "deviant": true
+    },
+    "RH_Cont_PFCl_12": {
+      "bag": 1.0874251409628783,
+      "contribution": -0.07532191163995314,
+      "percentile": 60.1,
+      "driver": false,
+      "deviant": false
+    },
+    "RH_Cont_PFCl_13": {
+      "bag": -2.8152397457311267,
+      "contribution": 0.39370061500682907,
+      "percentile": 7.4,
+      "driver": false,
+      "deviant": false
+    },
+    "RH_Cont_PFCl_14": {
+      "bag": 5.215790868410203,
+      "contribution": -1.2527461327509126,
+      "percentile": 97.9,
+      "driver": false,
+      "deviant": true
+    },
+    "RH_Cont_PFCl_15": {
+      "bag": -4.542011542200257,
+      "contribution": -0.0766386368611375,
+      "percentile": 2.9,
+      "driver": false,
+      "deviant": true
+    },
+    "RH_Cont_PFCl_2": {
+      "bag": 6.670519908387639,
+      "contribution": 0.32769146049402614,
+      "percentile": 84.7,
+      "driver": false,
+      "deviant": false
+    },
+    "RH_Cont_PFCl_3": {
+      "bag": -33.72979014267334,
+      "contribution": 5.2017552590411595,
+      "percentile": 0.1,
+      "driver": true,
+      "deviant": true
+    },
+    "RH_Cont_PFCl_4": {
+      "bag": 3.025663868032286,
+      "contribution": 0.007575948257193079,
+      "percentile": 63.1,
+      "driver": false,
+      "deviant": false
+    },
+    "RH_Cont_PFCl_5": {
+      "bag": -1.533088407776244,
+      "contribution": -0.18688325269320583,
+      "percentile": 38.7,
+      "driver": false,
+      "deviant": false
+    },
+    "RH_Cont_PFCl_6": {
+      "bag": 7.61232796163144,
+      "contribution": 0.10043351263360151,
+      "percentile": 89.1,
+      "driver": false,
+      "deviant": false
+    },
+    "RH_Cont_PFCl_7": {
+      "bag": 7.909980072484071,
+      "contribution": 0.21400084210610656,
+      "percentile": 93.7,
+      "driver": false,
+      "deviant": false
+    },
+    "RH_Cont_PFCl_8": {
+      "bag": 0.27911007861223425,
+      "contribution": -0.01191033251163894,
+      "percentile": 50.4,
+      "driver": false,
+      "deviant": false
+    },
+    "RH_Cont_PFCl_9": {
+      "bag": 13.566612344313043,
+      "contribution": 1.04393372392507,
+      "percentile": 98.3,
+      "driver": false,
+      "deviant": true
+    },
+    "RH_Cont_PFCmp_1": {
+      "bag": 8.401542818038699,
+      "contribution": 0.4704764121793926,
+      "percentile": 85.5,
+      "driver": false,
+      "deviant": false
+    },
+    "RH_Cont_PFCmp_2": {
+      "bag": 9.582185472197715,
+      "contribution": -0.2938845403706814,
+      "percentile": 92.9,
+      "driver": false,
+      "deviant": false
+    },
+    "RH_Cont_PFCv_1": {
+      "bag": 10.334763447983217,
+      "contribution": -0.20366890181259065,
+      "percentile": 94.3,
+      "driver": false,
+      "deviant": false
+    },
+    "RH_Cont_Par_1": {
+      "bag": 4.671211416665784,
+      "contribution": 0.2198427957367245,
+      "percentile": 80.0,
+      "driver": false,
+      "deviant": false
+    },
+    "RH_Cont_Par_2": {
+      "bag": 0.01937446260248521,
+      "contribution": 0.007534770685258926,
+      "percentile": 46.6,
+      "driver": false,
+      "deviant": false
+    },
+    "RH_Cont_Par_3": {
+      "bag": 5.063649818424267,
+      "contribution": 1.3143006412144922,
+      "percentile": 99.5,
+      "driver": false,
+      "deviant": true
+    },
+    "RH_Cont_Par_4": {
+      "bag": 9.194959253980457,
+      "contribution": -1.0189306001775535,
+      "percentile": 99.3,
+      "driver": false,
+      "deviant": true
+    },
+    "RH_Cont_Par_5": {
+      "bag": -20.05538453317838,
+      "contribution": -0.44577611718074267,
+      "percentile": 0.0,
+      "driver": false,
+      "deviant": true
+    },
+    "RH_Cont_Par_6": {
+      "bag": -0.15999725396791575,
+      "contribution": 0.037032595345745,
+      "percentile": 43.9,
+      "driver": false,
+      "deviant": false
+    },
+    "RH_Cont_Temp_1": {
+      "bag": 25.33826319403001,
+      "contribution": 0.5691740878118684,
+      "percentile": 99.9,
+      "driver": false,
+      "deviant": true
+    },
+    "RH_Cont_Temp_2": {
+      "bag": 24.867286686733774,
+      "contribution": 1.4596781126544287,
+      "percentile": 99.9,
+      "driver": false,
+      "deviant": true
+    },
+    "RH_Cont_pCun_1": {
+      "bag": 3.8630241847996203,
+      "contribution": -0.4655380689596064,
+      "percentile": 92.6,
+      "driver": false,
+      "deviant": false
+    },
+    "RH_Cont_pCun_2": {
+      "bag": 5.633620815105086,
+      "contribution": -0.07115240921629416,
+      "percentile": 84.4,
+      "driver": false,
+      "deviant": false
+    },
+    "RH_Default_PFCdPFCm_1": {
+      "bag": -2.894518450721108,
+      "contribution": 0.09209144439435175,
+      "percentile": 20.5,
+      "driver": false,
+      "deviant": false
+    },
+    "RH_Default_PFCdPFCm_10": {
+      "bag": -33.05461704763812,
+      "contribution": 1.5391659000026807,
+      "percentile": 0.0,
+      "driver": false,
+      "deviant": true
+    },
+    "RH_Default_PFCdPFCm_11": {
+      "bag": -7.640565279091369,
+      "contribution": 0.5310812319988469,
+      "percentile": 11.0,
+      "driver": false,
+      "deviant": false
+    },
+    "RH_Default_PFCdPFCm_12": {
+      "bag": -5.242057619871279,
+      "contribution": 0.3261673578381884,
+      "percentile": 5.4,
+      "driver": false,
+      "deviant": false
+    },
+    "RH_Default_PFCdPFCm_13": {
+      "bag": -14.941360922227652,
+      "contribution": -0.7591889122063109,
+      "percentile": 0.8,
+      "driver": false,
+      "deviant": true
+    },
+    "RH_Default_PFCdPFCm_2": {
+      "bag": -11.464619683678457,
+      "contribution": -0.034295117905282585,
+      "percentile": 2.2,
+      "driver": false,
+      "deviant": true
+    },
+    "RH_Default_PFCdPFCm_3": {
+      "bag": -8.406512757189855,
+      "contribution": -0.057855090293347775,
+      "percentile": 10.9,
+      "driver": false,
+      "deviant": false
+    },
+    "RH_Default_PFCdPFCm_4": {
+      "bag": -1.9524183761372953,
+      "contribution": 0.04234473724298498,
+      "percentile": 37.7,
+      "driver": false,
+      "deviant": false
+    },
+    "RH_Default_PFCdPFCm_5": {
+      "bag": -6.921901595652056,
+      "contribution": 0.16067587580473647,
+      "percentile": 13.3,
+      "driver": false,
+      "deviant": false
+    },
+    "RH_Default_PFCdPFCm_6": {
+      "bag": -1.2975846592792735,
+      "contribution": -0.13641892612701964,
+      "percentile": 24.7,
+      "driver": false,
+      "deviant": false
+    },
+    "RH_Default_PFCdPFCm_7": {
+      "bag": 13.295797178543221,
+      "contribution": 0.6546092442661369,
+      "percentile": 95.5,
+      "driver": false,
+      "deviant": true
+    },
+    "RH_Default_PFCdPFCm_8": {
+      "bag": -4.130361186692021,
+      "contribution": -0.3720434305221279,
+      "percentile": 19.5,
+      "driver": false,
+      "deviant": false
+    },
+    "RH_Default_PFCdPFCm_9": {
+      "bag": 4.096708910607973,
+      "contribution": 0.283870020568054,
+      "percentile": 69.4,
+      "driver": false,
+      "deviant": false
+    },
+    "RH_Default_PFCv_1": {
+      "bag": 15.954584626029487,
+      "contribution": 0.7391529080256013,
+      "percentile": 99.2,
+      "driver": false,
+      "deviant": true
+    },
+    "RH_Default_PFCv_2": {
+      "bag": 4.971612441988519,
+      "contribution": -1.682041239803643,
+      "percentile": 99.9,
+      "driver": true,
+      "deviant": true
+    },
+    "RH_Default_PFCv_3": {
+      "bag": -1.7408070827160884,
+      "contribution": 0.015393069772001897,
+      "percentile": 38.5,
+      "driver": false,
+      "deviant": false
+    },
+    "RH_Default_PFCv_4": {
+      "bag": 7.343803066037633,
+      "contribution": 0.5898126864831403,
+      "percentile": 83.4,
+      "driver": false,
+      "deviant": false
+    },
+    "RH_Default_Par_1": {
+      "bag": 24.740876354798093,
+      "contribution": -0.3640299732539676,
+      "percentile": 99.9,
+      "driver": false,
+      "deviant": true
+    },
+    "RH_Default_Par_2": {
+      "bag": 16.82482707994708,
+      "contribution": -0.24154960018683475,
+      "percentile": 99.2,
+      "driver": false,
+      "deviant": true
+    },
+    "RH_Default_Par_3": {
+      "bag": 15.103495131982601,
+      "contribution": 1.1441172688213357,
+      "percentile": 97.7,
+      "driver": false,
+      "deviant": true
+    },
+    "RH_Default_Par_4": {
+      "bag": 12.32156102994728,
+      "contribution": 0.24442191477473504,
+      "percentile": 99.8,
+      "driver": false,
+      "deviant": true
+    },
+    "RH_Default_Par_5": {
+      "bag": -14.96040561581523,
+      "contribution": -0.09001734506195701,
+      "percentile": 2.3,
+      "driver": false,
+      "deviant": true
+    },
+    "RH_Default_Temp_1": {
+      "bag": -1.8746480083119046,
+      "contribution": 0.34291852716292676,
+      "percentile": 12.3,
+      "driver": false,
+      "deviant": false
+    },
+    "RH_Default_Temp_2": {
+      "bag": 9.645996134348323,
+      "contribution": -0.08201877893476962,
+      "percentile": 91.7,
+      "driver": false,
+      "deviant": false
+    },
+    "RH_Default_Temp_3": {
+      "bag": -1.513037529155124,
+      "contribution": -0.11644530967553991,
+      "percentile": 14.3,
+      "driver": false,
+      "deviant": false
+    },
+    "RH_Default_Temp_4": {
+      "bag": 5.993173302778594,
+      "contribution": -0.11085775069690719,
+      "percentile": 79.1,
+      "driver": false,
+      "deviant": false
+    },
+    "RH_Default_Temp_5": {
+      "bag": 20.84800482061401,
+      "contribution": 1.4513519784822186,
+      "percentile": 99.7,
+      "driver": false,
+      "deviant": true
+    },
+    "RH_Default_Temp_6": {
+      "bag": 15.578534799255891,
+      "contribution": 0.8040917975491157,
+      "percentile": 96.5,
+      "driver": false,
+      "deviant": true
+    },
+    "RH_Default_Temp_7": {
+      "bag": -2.8839958657596583,
+      "contribution": -0.011715512712059858,
+      "percentile": 32.8,
+      "driver": false,
+      "deviant": false
+    },
+    "RH_Default_Temp_8": {
+      "bag": 11.822689655596623,
+      "contribution": -0.832954949544203,
+      "percentile": 97.0,
+      "driver": false,
+      "deviant": true
+    },
+    "RH_Default_pCunPCC_1": {
+      "bag": 7.882342835952237,
+      "contribution": 0.14649128545443438,
+      "percentile": 90.9,
+      "driver": false,
+      "deviant": false
+    },
+    "RH_Default_pCunPCC_2": {
+      "bag": -1.0205893395646264,
+      "contribution": -0.08779676496508604,
+      "percentile": 39.2,
+      "driver": false,
+      "deviant": false
+    },
+    "RH_Default_pCunPCC_3": {
+      "bag": -5.526964231065154,
+      "contribution": 0.9899985044380819,
+      "percentile": 3.6,
+      "driver": false,
+      "deviant": true
+    },
+    "RH_Default_pCunPCC_4": {
+      "bag": 11.6444691586717,
+      "contribution": 0.2068481045627703,
+      "percentile": 94.2,
+      "driver": false,
+      "deviant": false
+    },
+    "RH_Default_pCunPCC_5": {
+      "bag": 11.455024834210299,
+      "contribution": -0.22642817351874603,
+      "percentile": 95.0,
+      "driver": false,
+      "deviant": true
+    },
+    "RH_Default_pCunPCC_6": {
+      "bag": 13.949959988133742,
+      "contribution": 0.8943535671791866,
+      "percentile": 98.0,
+      "driver": false,
+      "deviant": true
+    },
+    "RH_Default_pCunPCC_7": {
+      "bag": 9.857400184551889,
+      "contribution": 0.7401603894780763,
+      "percentile": 92.8,
+      "driver": false,
+      "deviant": false
+    },
+    "RH_Default_pCunPCC_8": {
+      "bag": 6.04211335392111,
+      "contribution": -0.06245650081110276,
+      "percentile": 81.0,
+      "driver": false,
+      "deviant": false
+    },
+    "RH_Default_pCunPCC_9": {
+      "bag": -3.1561437192196813,
+      "contribution": 0.16334960985206207,
+      "percentile": 27.2,
+      "driver": false,
+      "deviant": false
+    },
+    "RH_DorsAttn_FEF_1": {
+      "bag": 4.464860754217618,
+      "contribution": 0.0015456633045563654,
+      "percentile": 97.0,
+      "driver": false,
+      "deviant": true
+    },
+    "RH_DorsAttn_FEF_2": {
+      "bag": 1.852014785325057,
+      "contribution": -0.5780918931101672,
+      "percentile": 75.5,
+      "driver": false,
+      "deviant": false
+    },
+    "RH_DorsAttn_FEF_3": {
+      "bag": -1.2676647892498742,
+      "contribution": -0.14010640603554428,
+      "percentile": 30.2,
+      "driver": false,
+      "deviant": false
+    },
+    "RH_DorsAttn_Post_1": {
+      "bag": 22.718731415786802,
+      "contribution": 0.32709674634258556,
+      "percentile": 99.9,
+      "driver": false,
+      "deviant": true
+    },
+    "RH_DorsAttn_Post_10": {
+      "bag": -1.3417498005727388,
+      "contribution": 0.2792399146808164,
+      "percentile": 16.3,
+      "driver": false,
+      "deviant": false
+    },
+    "RH_DorsAttn_Post_11": {
+      "bag": -1.2845055378500447,
+      "contribution": -0.18504059884951052,
+      "percentile": 17.0,
+      "driver": false,
+      "deviant": false
+    },
+    "RH_DorsAttn_Post_12": {
+      "bag": -4.1719908131467704,
+      "contribution": 0.22310144258648906,
+      "percentile": 19.8,
+      "driver": false,
+      "deviant": false
+    },
+    "RH_DorsAttn_Post_13": {
+      "bag": 3.547791341448157,
+      "contribution": -0.37490925169370454,
+      "percentile": 92.1,
+      "driver": false,
+      "deviant": false
+    },
+    "RH_DorsAttn_Post_14": {
+      "bag": -1.3652067820831526,
+      "contribution": 0.2099273394917498,
+      "percentile": 13.4,
+      "driver": false,
+      "deviant": false
+    },
+    "RH_DorsAttn_Post_15": {
+      "bag": 21.04645794532625,
+      "contribution": 1.3037570521553898,
+      "percentile": 99.9,
+      "driver": false,
+      "deviant": true
+    },
+    "RH_DorsAttn_Post_16": {
+      "bag": -1.3452596232194196,
+      "contribution": 0.2514186149960428,
+      "percentile": 17.6,
+      "driver": false,
+      "deviant": false
+    },
+    "RH_DorsAttn_Post_17": {
+      "bag": 9.66871506057316,
+      "contribution": -0.4439658441682556,
+      "percentile": 99.6,
+      "driver": false,
+      "deviant": true
+    },
+    "RH_DorsAttn_Post_18": {
+      "bag": 0.2150770279558074,
+      "contribution": 0.0048842338532176545,
+      "percentile": 45.0,
+      "driver": false,
+      "deviant": false
+    },
+    "RH_DorsAttn_Post_19": {
+      "bag": -1.2797954783433845,
+      "contribution": 0.0036635429966038998,
+      "percentile": 18.9,
+      "driver": false,
+      "deviant": false
+    },
+    "RH_DorsAttn_Post_2": {
+      "bag": 15.131787374873571,
+      "contribution": 0.7826566333961056,
+      "percentile": 99.0,
+      "driver": false,
+      "deviant": true
+    },
+    "RH_DorsAttn_Post_3": {
+      "bag": 15.366845279753775,
+      "contribution": 0.8510420450023802,
+      "percentile": 99.5,
+      "driver": false,
+      "deviant": true
+    },
+    "RH_DorsAttn_Post_4": {
+      "bag": 2.534159899470872,
+      "contribution": 0.008660952790588492,
+      "percentile": 67.7,
+      "driver": false,
+      "deviant": false
+    },
+    "RH_DorsAttn_Post_5": {
+      "bag": -0.5543421978655161,
+      "contribution": 0.021577626338533044,
+      "percentile": 38.8,
+      "driver": false,
+      "deviant": false
+    },
+    "RH_DorsAttn_Post_6": {
+      "bag": 5.731828793240997,
+      "contribution": -0.24464968810025423,
+      "percentile": 95.3,
+      "driver": false,
+      "deviant": true
+    },
+    "RH_DorsAttn_Post_7": {
+      "bag": 1.6945601431060133,
+      "contribution": 0.04552869094310465,
+      "percentile": 56.5,
+      "driver": false,
+      "deviant": false
+    },
+    "RH_DorsAttn_Post_8": {
+      "bag": -1.1921612858144854,
+      "contribution": 0.1412993548221622,
+      "percentile": 32.7,
+      "driver": false,
+      "deviant": false
+    },
+    "RH_DorsAttn_Post_9": {
+      "bag": -4.314390970863133,
+      "contribution": -0.1407816156867001,
+      "percentile": 9.2,
+      "driver": false,
+      "deviant": false
+    },
+    "RH_DorsAttn_PrCv_1": {
+      "bag": 11.46217878367949,
+      "contribution": 0.9055598132779071,
+      "percentile": 96.7,
+      "driver": false,
+      "deviant": true
+    },
+    "RH_Limbic_OFC_1": {
+      "bag": -21.287517506658265,
+      "contribution": -0.7778853536921345,
+      "percentile": 0.4,
+      "driver": false,
+      "deviant": true
+    },
+    "RH_Limbic_OFC_2": {
+      "bag": 2.049699893288718,
+      "contribution": 0.11654686996181429,
+      "percentile": 60.4,
+      "driver": false,
+      "deviant": false
+    },
+    "RH_Limbic_OFC_3": {
+      "bag": -3.2669234782023473,
+      "contribution": -0.0971013056035412,
+      "percentile": 6.5,
+      "driver": false,
+      "deviant": false
+    },
+    "RH_Limbic_OFC_4": {
+      "bag": -1.3213397564871094,
+      "contribution": 0.06361962191243246,
+      "percentile": 29.6,
+      "driver": false,
+      "deviant": false
+    },
+    "RH_Limbic_OFC_5": {
+      "bag": -1.382189342561432,
+      "contribution": 0.2575654881770588,
+      "percentile": 15.1,
+      "driver": false,
+      "deviant": false
+    },
+    "RH_Limbic_OFC_6": {
+      "bag": 0.4065934242657967,
+      "contribution": -0.015931108662339155,
+      "percentile": 51.8,
+      "driver": false,
+      "deviant": false
+    },
+    "RH_Limbic_TempPole_1": {
+      "bag": -1.2775838189614817,
+      "contribution": -0.15666097306479368,
+      "percentile": 24.4,
+      "driver": false,
+      "deviant": false
+    },
+    "RH_Limbic_TempPole_2": {
+      "bag": 3.452039090598422,
+      "contribution": -0.27567588697732054,
+      "percentile": 92.3,
+      "driver": false,
+      "deviant": false
+    },
+    "RH_Limbic_TempPole_3": {
+      "bag": -1.3178439835795217,
+      "contribution": -0.3307723554045234,
+      "percentile": 27.8,
+      "driver": false,
+      "deviant": false
+    },
+    "RH_Limbic_TempPole_4": {
+      "bag": 15.442505610520747,
+      "contribution": 0.48652813757550495,
+      "percentile": 99.6,
+      "driver": false,
+      "deviant": true
+    },
+    "RH_Limbic_TempPole_5": {
+      "bag": -11.846760123435416,
+      "contribution": -0.3275010894730369,
+      "percentile": 0.1,
+      "driver": false,
+      "deviant": true
+    },
+    "RH_Limbic_TempPole_6": {
+      "bag": 17.54050609187714,
+      "contribution": -0.5605984992376241,
+      "percentile": 99.2,
+      "driver": false,
+      "deviant": true
+    },
+    "RH_Limbic_TempPole_7": {
+      "bag": 0.5135697042296421,
+      "contribution": -0.05155296231805747,
+      "percentile": 60.2,
+      "driver": false,
+      "deviant": false
+    },
+    "RH_SalVentAttn_FrOperIns_1": {
+      "bag": -1.1523733042274351,
+      "contribution": 0.03754741022439291,
+      "percentile": 19.3,
+      "driver": false,
+      "deviant": false
+    },
+    "RH_SalVentAttn_FrOperIns_2": {
+      "bag": -4.341313269806992,
+      "contribution": 0.13013933286966603,
+      "percentile": 23.4,
+      "driver": false,
+      "deviant": false
+    },
+    "RH_SalVentAttn_FrOperIns_3": {
+      "bag": -0.6505133457802188,
+      "contribution": -0.052712177238266496,
+      "percentile": 43.0,
+      "driver": false,
+      "deviant": false
+    },
+    "RH_SalVentAttn_FrOperIns_4": {
+      "bag": -2.358533518888251,
+      "contribution": 0.06366862006175243,
+      "percentile": 30.3,
+      "driver": false,
+      "deviant": false
+    },
+    "RH_SalVentAttn_FrOperIns_5": {
+      "bag": 4.702996977617268,
+      "contribution": 0.11391865069990446,
+      "percentile": 72.1,
+      "driver": false,
+      "deviant": false
+    },
+    "RH_SalVentAttn_FrOperIns_6": {
+      "bag": 6.847626151035545,
+      "contribution": -0.1191897706327597,
+      "percentile": 94.3,
+      "driver": false,
+      "deviant": false
+    },
+    "RH_SalVentAttn_FrOperIns_7": {
+      "bag": 7.10530290638393,
+      "contribution": 0.22654863348039242,
+      "percentile": 83.5,
+      "driver": false,
+      "deviant": false
+    },
+    "RH_SalVentAttn_FrOperIns_8": {
+      "bag": 5.304416251382314,
+      "contribution": -0.0919933724227212,
+      "percentile": 84.2,
+      "driver": false,
+      "deviant": false
+    },
+    "RH_SalVentAttn_Med_1": {
+      "bag": -0.04656982222584105,
+      "contribution": -0.1419244497651534,
+      "percentile": 49.1,
+      "driver": false,
+      "deviant": false
+    },
+    "RH_SalVentAttn_Med_2": {
+      "bag": -26.142702160078223,
+      "contribution": -1.1883223632831172,
+      "percentile": 0.1,
+      "driver": false,
+      "deviant": true
+    },
+    "RH_SalVentAttn_Med_3": {
+      "bag": 9.850211947988331,
+      "contribution": 0.2704903547596669,
+      "percentile": 91.4,
+      "driver": false,
+      "deviant": false
+    },
+    "RH_SalVentAttn_Med_4": {
+      "bag": 0.1915257746223915,
+      "contribution": -0.0001672647018116129,
+      "percentile": 48.4,
+      "driver": false,
+      "deviant": false
+    },
+    "RH_SalVentAttn_Med_5": {
+      "bag": -2.3498506572953133,
+      "contribution": -0.19831623685389596,
+      "percentile": 26.5,
+      "driver": false,
+      "deviant": false
+    },
+    "RH_SalVentAttn_Med_6": {
+      "bag": 0.9459541175996691,
+      "contribution": -0.05885529681480031,
+      "percentile": 54.4,
+      "driver": false,
+      "deviant": false
+    },
+    "RH_SalVentAttn_Med_7": {
+      "bag": -1.2778320083781303,
+      "contribution": -0.14124617385260765,
+      "percentile": 29.6,
+      "driver": false,
+      "deviant": false
+    },
+    "RH_SalVentAttn_Med_8": {
+      "bag": -0.8219397518851252,
+      "contribution": -0.015386703559521035,
+      "percentile": 38.6,
+      "driver": false,
+      "deviant": false
+    },
+    "RH_SalVentAttn_PFCl_1": {
+      "bag": -5.593521369223961,
+      "contribution": 0.12395357302645046,
+      "percentile": 11.6,
+      "driver": false,
+      "deviant": false
+    },
+    "RH_SalVentAttn_PrC_1": {
+      "bag": -1.1990833015287343,
+      "contribution": -0.0012502820548411136,
+      "percentile": 39.5,
+      "driver": false,
+      "deviant": false
+    },
+    "RH_SalVentAttn_TempOccPar_1": {
+      "bag": 27.896512464816066,
+      "contribution": 1.41498024489763,
+      "percentile": 99.9,
+      "driver": false,
+      "deviant": true
+    },
+    "RH_SalVentAttn_TempOccPar_2": {
+      "bag": 15.845600096659272,
+      "contribution": -0.3733190814931556,
+      "percentile": 99.6,
+      "driver": false,
+      "deviant": true
+    },
+    "RH_SalVentAttn_TempOccPar_3": {
+      "bag": 0.9758638921765801,
+      "contribution": 0.0027681192194686493,
+      "percentile": 71.7,
+      "driver": false,
+      "deviant": false
+    },
+    "RH_SalVentAttn_TempOccPar_4": {
+      "bag": 3.927769161551847,
+      "contribution": -0.26752386557103475,
+      "percentile": 76.6,
+      "driver": false,
+      "deviant": false
+    },
+    "RH_SalVentAttn_TempOccPar_5": {
+      "bag": 10.334891907065323,
+      "contribution": 0.4399456571872848,
+      "percentile": 96.4,
+      "driver": false,
+      "deviant": true
+    },
+    "RH_SalVentAttn_TempOccPar_6": {
+      "bag": 14.275405985183443,
+      "contribution": 0.38762316778460554,
+      "percentile": 98.8,
+      "driver": false,
+      "deviant": true
+    },
+    "RH_SalVentAttn_TempOccPar_7": {
+      "bag": 3.864374123101552,
+      "contribution": 0.21711000307054762,
+      "percentile": 85.4,
+      "driver": false,
+      "deviant": false
+    },
+    "RH_SomMot_1": {
+      "bag": -11.106254545873465,
+      "contribution": 0.7889317337654725,
+      "percentile": 5.8,
+      "driver": false,
+      "deviant": false
+    },
+    "RH_SomMot_10": {
+      "bag": -4.808623681084093,
+      "contribution": 0.06505311952626397,
+      "percentile": 24.3,
+      "driver": false,
+      "deviant": false
+    },
+    "RH_SomMot_11": {
+      "bag": 5.078540790550704,
+      "contribution": -0.030155398491933244,
+      "percentile": 81.6,
+      "driver": false,
+      "deviant": false
+    },
+    "RH_SomMot_12": {
+      "bag": 9.856810660383957,
+      "contribution": 0.18590484147806918,
+      "percentile": 94.2,
+      "driver": false,
+      "deviant": false
+    },
+    "RH_SomMot_13": {
+      "bag": 4.154856139561151,
+      "contribution": 0.1087591774462496,
+      "percentile": 80.7,
+      "driver": false,
+      "deviant": false
+    },
+    "RH_SomMot_14": {
+      "bag": 10.092223583640454,
+      "contribution": -0.8380880240362102,
+      "percentile": 98.3,
+      "driver": false,
+      "deviant": true
+    },
+    "RH_SomMot_15": {
+      "bag": 4.698711606433331,
+      "contribution": -0.3439970670745264,
+      "percentile": 91.5,
+      "driver": false,
+      "deviant": false
+    },
+    "RH_SomMot_16": {
+      "bag": 5.762555462784956,
+      "contribution": 0.40565203709885383,
+      "percentile": 82.6,
+      "driver": false,
+      "deviant": false
+    },
+    "RH_SomMot_17": {
+      "bag": 7.298264186330929,
+      "contribution": 0.07773766996984229,
+      "percentile": 82.9,
+      "driver": false,
+      "deviant": false
+    },
+    "RH_SomMot_18": {
+      "bag": 5.7058558665577905,
+      "contribution": -1.3132346145065814,
+      "percentile": 99.5,
+      "driver": false,
+      "deviant": true
+    },
+    "RH_SomMot_19": {
+      "bag": -0.896784164164643,
+      "contribution": 0.020504806529999097,
+      "percentile": 38.1,
+      "driver": false,
+      "deviant": false
+    },
+    "RH_SomMot_2": {
+      "bag": 26.272956383029285,
+      "contribution": 1.394969344907694,
+      "percentile": 99.8,
+      "driver": false,
+      "deviant": true
+    },
+    "RH_SomMot_20": {
+      "bag": -7.69822079659874,
+      "contribution": -0.4253523314844907,
+      "percentile": 11.5,
+      "driver": false,
+      "deviant": false
+    },
+    "RH_SomMot_21": {
+      "bag": 1.4723547261999386,
+      "contribution": -0.13452639723440868,
+      "percentile": 59.1,
+      "driver": false,
+      "deviant": false
+    },
+    "RH_SomMot_22": {
+      "bag": -1.1925927735109774,
+      "contribution": -0.3513197739821716,
+      "percentile": 24.7,
+      "driver": false,
+      "deviant": false
+    },
+    "RH_SomMot_23": {
+      "bag": -18.469597106900004,
+      "contribution": -1.359915638150285,
+      "percentile": 0.1,
+      "driver": false,
+      "deviant": true
+    },
+    "RH_SomMot_24": {
+      "bag": -1.274613652698406,
+      "contribution": -0.0393081325705432,
+      "percentile": 41.4,
+      "driver": false,
+      "deviant": false
+    },
+    "RH_SomMot_25": {
+      "bag": -1.0080935073771684,
+      "contribution": -0.0796552980483301,
+      "percentile": 21.2,
+      "driver": false,
+      "deviant": false
+    },
+    "RH_SomMot_26": {
+      "bag": -1.2257959021962677,
+      "contribution": -0.20620855547820838,
+      "percentile": 22.5,
+      "driver": false,
+      "deviant": false
+    },
+    "RH_SomMot_27": {
+      "bag": -0.8954044200788474,
+      "contribution": -0.37710331548966847,
+      "percentile": 27.2,
+      "driver": false,
+      "deviant": false
+    },
+    "RH_SomMot_28": {
+      "bag": -6.979225089418609,
+      "contribution": 0.1810209575366526,
+      "percentile": 0.3,
+      "driver": false,
+      "deviant": true
+    },
+    "RH_SomMot_29": {
+      "bag": -1.3738569525494455,
+      "contribution": 0.25378968700392174,
+      "percentile": 19.0,
+      "driver": false,
+      "deviant": false
+    },
+    "RH_SomMot_3": {
+      "bag": 1.2683149141825893,
+      "contribution": 0.012352552778038022,
+      "percentile": 57.9,
+      "driver": false,
+      "deviant": false
+    },
+    "RH_SomMot_30": {
+      "bag": -0.9688424711943,
+      "contribution": 0.4426668993853069,
+      "percentile": 45.5,
+      "driver": false,
+      "deviant": false
+    },
+    "RH_SomMot_31": {
+      "bag": -1.285298289244814,
+      "contribution": -0.14390792205816183,
+      "percentile": 27.8,
+      "driver": false,
+      "deviant": false
+    },
+    "RH_SomMot_32": {
+      "bag": 0.27836180899883445,
+      "contribution": -0.10581111884003581,
+      "percentile": 48.5,
+      "driver": false,
+      "deviant": false
+    },
+    "RH_SomMot_33": {
+      "bag": -1.1416632741713464,
+      "contribution": -0.11877760149974874,
+      "percentile": 31.2,
+      "driver": false,
+      "deviant": false
+    },
+    "RH_SomMot_34": {
+      "bag": -1.0840957098556743,
+      "contribution": -0.658069088644532,
+      "percentile": 37.7,
+      "driver": false,
+      "deviant": false
+    },
+    "RH_SomMot_35": {
+      "bag": -1.3026390819246672,
+      "contribution": -0.21428655240642308,
+      "percentile": 24.0,
+      "driver": false,
+      "deviant": false
+    },
+    "RH_SomMot_36": {
+      "bag": -1.263761996447787,
+      "contribution": -0.6913187100400124,
+      "percentile": 26.5,
+      "driver": false,
+      "deviant": false
+    },
+    "RH_SomMot_37": {
+      "bag": 12.107204088073765,
+      "contribution": 0.23714281447961094,
+      "percentile": 99.4,
+      "driver": false,
+      "deviant": true
+    },
+    "RH_SomMot_38": {
+      "bag": -1.291448156262856,
+      "contribution": -0.11219637933306206,
+      "percentile": 24.9,
+      "driver": false,
+      "deviant": false
+    },
+    "RH_SomMot_39": {
+      "bag": -1.3124957998045872,
+      "contribution": -0.1630782876405818,
+      "percentile": 22.3,
+      "driver": false,
+      "deviant": false
+    },
+    "RH_SomMot_4": {
+      "bag": -4.941389287549928,
+      "contribution": -0.07219224417425064,
+      "percentile": 19.9,
+      "driver": false,
+      "deviant": false
+    },
+    "RH_SomMot_40": {
+      "bag": -1.2870391962961882,
+      "contribution": -0.15459441773092192,
+      "percentile": 25.8,
+      "driver": false,
+      "deviant": false
+    },
+    "RH_SomMot_5": {
+      "bag": -0.5414022192919958,
+      "contribution": 0.009202792893977494,
+      "percentile": 42.4,
+      "driver": false,
+      "deviant": false
+    },
+    "RH_SomMot_6": {
+      "bag": 4.744883583271939,
+      "contribution": 0.12399417104279069,
+      "percentile": 87.3,
+      "driver": false,
+      "deviant": false
+    },
+    "RH_SomMot_7": {
+      "bag": -35.625575177114655,
+      "contribution": -2.9780230438112847,
+      "percentile": 0.0,
+      "driver": true,
+      "deviant": true
+    },
+    "RH_SomMot_8": {
+      "bag": 4.087929159142412,
+      "contribution": 0.00039392507769922124,
+      "percentile": 80.5,
+      "driver": false,
+      "deviant": false
+    },
+    "RH_SomMot_9": {
+      "bag": -0.14862780226390981,
+      "contribution": 0.01597434593040443,
+      "percentile": 57.1,
+      "driver": false,
+      "deviant": false
+    },
+    "RH_Vis_1": {
+      "bag": 11.920766246041868,
+      "contribution": 0.5458981701086136,
+      "percentile": 98.5,
+      "driver": false,
+      "deviant": true
+    },
+    "RH_Vis_10": {
+      "bag": -0.9049713035167528,
+      "contribution": -0.03250048771337289,
+      "percentile": 36.6,
+      "driver": false,
+      "deviant": false
+    },
+    "RH_Vis_11": {
+      "bag": -18.63589735875928,
+      "contribution": 0.6511374038009263,
+      "percentile": 0.4,
+      "driver": false,
+      "deviant": true
+    },
+    "RH_Vis_12": {
+      "bag": 0.36380464983577454,
+      "contribution": -0.0009010272543100244,
+      "percentile": 57.1,
+      "driver": false,
+      "deviant": false
+    },
+    "RH_Vis_13": {
+      "bag": 0.9002233505361374,
+      "contribution": 0.08076577150665198,
+      "percentile": 75.8,
+      "driver": false,
+      "deviant": false
+    },
+    "RH_Vis_14": {
+      "bag": 8.213408577678848,
+      "contribution": 0.18385296929188208,
+      "percentile": 86.2,
+      "driver": false,
+      "deviant": false
+    },
+    "RH_Vis_15": {
+      "bag": -1.2583602950755335,
+      "contribution": -0.1441469338644222,
+      "percentile": 32.7,
+      "driver": false,
+      "deviant": false
+    },
+    "RH_Vis_16": {
+      "bag": 26.126276352562375,
+      "contribution": 1.881830354431265,
+      "percentile": 99.8,
+      "driver": true,
+      "deviant": true
+    },
+    "RH_Vis_17": {
+      "bag": 4.384671725199187,
+      "contribution": 0.1391864963260398,
+      "percentile": 73.9,
+      "driver": false,
+      "deviant": false
+    },
+    "RH_Vis_18": {
+      "bag": 7.087639492790952,
+      "contribution": -0.42192268031375496,
+      "percentile": 88.4,
+      "driver": false,
+      "deviant": false
+    },
+    "RH_Vis_19": {
+      "bag": -12.180735454156125,
+      "contribution": -0.32879744409636336,
+      "percentile": 2.8,
+      "driver": false,
+      "deviant": true
+    },
+    "RH_Vis_2": {
+      "bag": 1.1809082709436431,
+      "contribution": -0.05661069392923678,
+      "percentile": 56.8,
+      "driver": false,
+      "deviant": false
+    },
+    "RH_Vis_20": {
+      "bag": 1.93714258315131,
+      "contribution": 0.10705422836609749,
+      "percentile": 57.3,
+      "driver": false,
+      "deviant": false
+    },
+    "RH_Vis_21": {
+      "bag": -1.1479453718232406,
+      "contribution": 0.007011197174835369,
+      "percentile": 17.3,
+      "driver": false,
+      "deviant": false
+    },
+    "RH_Vis_22": {
+      "bag": 15.324575925815498,
+      "contribution": -0.8366089575405758,
+      "percentile": 99.0,
+      "driver": false,
+      "deviant": true
+    },
+    "RH_Vis_23": {
+      "bag": -5.384302246356171,
+      "contribution": -0.18282188681234732,
+      "percentile": 13.6,
+      "driver": false,
+      "deviant": false
+    },
+    "RH_Vis_24": {
+      "bag": -7.971598539528845,
+      "contribution": -0.5868858946090172,
+      "percentile": 15.9,
+      "driver": false,
+      "deviant": false
+    },
+    "RH_Vis_25": {
+      "bag": -5.277862376578554,
+      "contribution": -0.07886905385529816,
+      "percentile": 9.3,
+      "driver": false,
+      "deviant": false
+    },
+    "RH_Vis_26": {
+      "bag": 3.8998223824421814,
+      "contribution": 0.14624281918650867,
+      "percentile": 72.9,
+      "driver": false,
+      "deviant": false
+    },
+    "RH_Vis_27": {
+      "bag": -0.9747647738231784,
+      "contribution": 0.026932889815156427,
+      "percentile": 32.8,
+      "driver": false,
+      "deviant": false
+    },
+    "RH_Vis_28": {
+      "bag": -2.2417973049940585,
+      "contribution": -0.002766728546520012,
+      "percentile": 36.8,
+      "driver": false,
+      "deviant": false
+    },
+    "RH_Vis_29": {
+      "bag": 7.142013214914286,
+      "contribution": -0.13251597749848273,
+      "percentile": 91.1,
+      "driver": false,
+      "deviant": false
+    },
+    "RH_Vis_3": {
+      "bag": 4.790399864441451,
+      "contribution": 0.3119663925401649,
+      "percentile": 91.1,
+      "driver": false,
+      "deviant": false
+    },
+    "RH_Vis_30": {
+      "bag": 0.10837977889993056,
+      "contribution": -0.009740796273169176,
+      "percentile": 50.6,
+      "driver": false,
+      "deviant": false
+    },
+    "RH_Vis_4": {
+      "bag": -3.4041330159125387,
+      "contribution": 0.1667216002607067,
+      "percentile": 25.2,
+      "driver": false,
+      "deviant": false
+    },
+    "RH_Vis_5": {
+      "bag": -5.493288258166629,
+      "contribution": -0.43321554350311464,
+      "percentile": 25.3,
+      "driver": false,
+      "deviant": false
+    },
+    "RH_Vis_6": {
+      "bag": 14.348565690177988,
+      "contribution": -0.47019381448664727,
+      "percentile": 96.1,
+      "driver": false,
+      "deviant": true
+    },
+    "RH_Vis_7": {
+      "bag": 7.067650568712548,
+      "contribution": -0.2602481063527703,
+      "percentile": 91.6,
+      "driver": false,
+      "deviant": false
+    },
+    "RH_Vis_8": {
+      "bag": -0.17492715480730325,
+      "contribution": -0.002288162820193901,
+      "percentile": 44.3,
+      "driver": false,
+      "deviant": false
+    },
+    "RH_Vis_9": {
+      "bag": 19.22592896128458,
+      "contribution": -0.5603432694995591,
+      "percentile": 99.6,
+      "driver": false,
+      "deviant": true
+    },
+    "THA-DA-lh": {
+      "bag": -2.943929449272371,
+      "contribution": -0.1900507109108049,
+      "percentile": 32.7,
+      "driver": false,
+      "deviant": false
+    },
+    "THA-DA-rh": {
+      "bag": -1.935986128928981,
+      "contribution": -0.03018340414119285,
+      "percentile": 38.3,
+      "driver": false,
+      "deviant": false
+    },
+    "THA-DP-lh": {
+      "bag": 10.201519206764424,
+      "contribution": 0.12899966629739032,
+      "percentile": 93.5,
+      "driver": false,
+      "deviant": false
+    },
+    "THA-DP-rh": {
+      "bag": 2.7599726091997425,
+      "contribution": 0.19196873040429924,
+      "percentile": 69.4,
+      "driver": false,
+      "deviant": false
+    },
+    "THA-VA-lh": {
+      "bag": -3.752129983828901,
+      "contribution": -0.36010501282203755,
+      "percentile": 30.9,
+      "driver": false,
+      "deviant": false
+    },
+    "THA-VA-rh": {
+      "bag": 14.234584724169753,
+      "contribution": 0.7054926862390737,
+      "percentile": 99.1,
+      "driver": false,
+      "deviant": true
+    },
+    "THA-VP-lh": {
+      "bag": 6.885593040864389,
+      "contribution": -0.12109462159816238,
+      "percentile": 88.7,
+      "driver": false,
+      "deviant": false
+    },
+    "THA-VP-rh": {
+      "bag": 3.8782431518933933,
+      "contribution": 0.0348092866774984,
+      "percentile": 80.6,
+      "driver": false,
+      "deviant": false
+    },
+    "aCAU-lh": {
+      "bag": 0.8549152166299123,
+      "contribution": -0.04137318788792109,
+      "percentile": 51.8,
+      "driver": false,
+      "deviant": false
+    },
+    "aCAU-rh": {
+      "bag": 3.996329453360758,
+      "contribution": 0.020219361647928813,
+      "percentile": 68.3,
+      "driver": false,
+      "deviant": false
+    },
+    "aGP-lh": {
+      "bag": -1.3087933939223042,
+      "contribution": -0.12874889755965524,
+      "percentile": 23.1,
+      "driver": false,
+      "deviant": false
+    },
+    "aGP-rh": {
+      "bag": -0.4451254903676798,
+      "contribution": -0.0033041895151777246,
+      "percentile": 48.4,
+      "driver": false,
+      "deviant": false
+    },
+    "aHIP-lh": {
+      "bag": -2.1932769495456306,
+      "contribution": 0.24769195263498153,
+      "percentile": 17.7,
+      "driver": false,
+      "deviant": false
+    },
+    "aHIP-rh": {
+      "bag": -1.1638251152455794,
+      "contribution": -0.18727847459964725,
+      "percentile": 37.1,
+      "driver": false,
+      "deviant": false
+    },
+    "aPUT-lh": {
+      "bag": -1.2708935132244754,
+      "contribution": -0.10075990542132175,
+      "percentile": 41.3,
+      "driver": false,
+      "deviant": false
+    },
+    "aPUT-rh": {
+      "bag": -7.523619010863829,
+      "contribution": -0.8399376404938446,
+      "percentile": 23.9,
+      "driver": false,
+      "deviant": false
+    },
+    "lAMY-lh": {
+      "bag": 2.8541796157860375,
+      "contribution": 0.14815692719770013,
+      "percentile": 70.5,
+      "driver": false,
+      "deviant": false
+    },
+    "lAMY-rh": {
+      "bag": 4.274850199080962,
+      "contribution": 0.5133627576417703,
+      "percentile": 78.6,
+      "driver": false,
+      "deviant": false
+    },
+    "mAMY-lh": {
+      "bag": -6.04535206069086,
+      "contribution": -0.21776282720672496,
+      "percentile": 1.7,
+      "driver": false,
+      "deviant": true
+    },
+    "mAMY-rh": {
+      "bag": 2.873581850266415,
+      "contribution": 0.464950491057046,
+      "percentile": 95.7,
+      "driver": false,
+      "deviant": true
+    },
+    "pCAU-lh": {
+      "bag": 13.990331629984578,
+      "contribution": 0.8477051288990636,
+      "percentile": 96.6,
+      "driver": false,
+      "deviant": true
+    },
+    "pCAU-rh": {
+      "bag": 9.601436208862022,
+      "contribution": 0.38043146898010854,
+      "percentile": 99.1,
+      "driver": false,
+      "deviant": true
+    },
+    "pGP-lh": {
+      "bag": -1.2250277738890247,
+      "contribution": -0.3747090787792823,
+      "percentile": 30.9,
+      "driver": false,
+      "deviant": false
+    },
+    "pGP-rh": {
+      "bag": -1.2992493511701682,
+      "contribution": -0.22941340347254566,
+      "percentile": 23.1,
+      "driver": false,
+      "deviant": false
+    },
+    "pHIP-lh": {
+      "bag": -0.6676568611672025,
+      "contribution": 0.12357233932483307,
+      "percentile": 37.5,
+      "driver": false,
+      "deviant": false
+    },
+    "pHIP-rh": {
+      "bag": 4.821831514161378,
+      "contribution": -1.651677689725208,
+      "percentile": 99.4,
+      "driver": false,
+      "deviant": true
+    },
+    "pPUT-lh": {
+      "bag": -8.770220844022049,
+      "contribution": 0.021708913645396823,
+      "percentile": 8.1,
+      "driver": false,
+      "deviant": false
+    },
+    "pPUT-rh": {
+      "bag": -16.957014264174127,
+      "contribution": -0.9119806500623119,
+      "percentile": 1.0,
+      "driver": false,
+      "deviant": true
+    }
+  }
+}

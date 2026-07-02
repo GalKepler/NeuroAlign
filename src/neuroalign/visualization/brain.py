@@ -57,8 +57,8 @@ def render_brain_png(
     n_cortical: int = 400,
     tian_atlas_path: Optional[str] = None,
     cmap: str = "RdBu_r",
-    vmin: float = -2.5,
-    vmax: float = 2.5,
+    vmin: float = -20,
+    vmax: float = 20,
 ) -> bytes:
     """Render a composited cortical + subcortical brain image using yabplot.
 

@@ -108,8 +108,15 @@ def _compute_region_metrics(
     ages: np.ndarray,
     region_mapping: dict,
     cfg: BAGConfig,
-) -> pd.DataFrame:
-    """Per-region stage-1 (base learner) OOF diagnostics from a full-data fit."""
+) -> tuple[pd.DataFrame, np.ndarray, np.ndarray, list[str]]:
+    """Per-region stage-1 (base learner) OOF diagnostics from a full-data fit.
+
+    Also returns the raw per-session x per-region stage-1 OOF predicted-age
+    matrix and the fitted linear meta-learner's per-region contribution to the
+    overall (scalar) predicted age - both are discarded by the caller unless
+    asked for, so a single full-data fit serves both diagnostics and the
+    regional BAG / contribution outputs.
+    """
     n_subjects_proxy = max(2, min(5, len(ages)))
     logger.info("Fitting full-data stacker for region diagnostics.")
     full_weight = compute_ipw_weights(ages, cfg.ipw_bandwidth) if cfg.ipw else None
@@ -136,7 +143,24 @@ def _compute_region_metrics(
                 "correlation": pearsonr(ages, oof)[0],
             }
         )
-    return pd.DataFrame(metrics_rows)
+
+    # Per-region contribution to the overall predicted age: the meta-learner is
+    # a linear pipeline (impute + scale + RidgeCV), so
+    # contribution[:, r] = coef_[r] * scaled_oof[:, r], and
+    # contribution.sum(axis=1) + intercept_ == meta_pipe.predict(oof_predictions_).
+    meta_pipe = full_stacker.meta_estimator_
+    scaled_oof = meta_pipe.named_steps["scaler"].transform(
+        meta_pipe.named_steps["imputer"].transform(full_stacker.oof_predictions_)
+    )
+    ridge = meta_pipe.named_steps["model"]
+    contribution = scaled_oof * ridge.coef_[np.newaxis, :]
+
+    return (
+        pd.DataFrame(metrics_rows),
+        full_stacker.oof_predictions_,
+        contribution,
+        full_stacker.region_names_,
+    )
 
 
 class MultivariateRegionalBAGEstimator:
@@ -252,6 +276,10 @@ class MultivariateRegionalBAGEstimator:
 
         pred = _run_outer_cv(x, ages, uids, region_mapping, cfg)
 
+        # Snapshot before the implausible-prediction filter below reassigns `sessions` -
+        # the regional matrices are keyed to this full (x, ages) session set.
+        full_sessions = list(sessions)
+
         implausible = (pred < 0) | (pred > 120)
         n_implausible = int(implausible.sum())
         if n_implausible:
@@ -284,8 +312,25 @@ class MultivariateRegionalBAGEstimator:
         else:
             bag = bag_uncorrected.copy()
 
-        # --- Region-level diagnostics: stage-1 OOF from a full-data fit ---
-        region_metrics = _compute_region_metrics(x, ages, region_mapping, cfg)
+        # --- Region-level diagnostics + regional BAG / contribution: full-data fit ---
+        region_metrics, oof_predictions, contribution, region_names = _compute_region_metrics(
+            x, ages, region_mapping, cfg
+        )
+
+        region_ids = pd.DataFrame(full_sessions, columns=META_COLS)
+
+        def _wide(matrix: np.ndarray) -> pd.DataFrame:
+            return pd.concat([region_ids, pd.DataFrame(matrix, columns=region_names)], axis=1)
+
+        regional_bag_uncorrected = _wide(oof_predictions - ages[:, np.newaxis])
+
+        if cfg.bias_correction:
+            corrected = apply_bias_correction(regional_bag_uncorrected[region_names], ages)
+            regional_bag = _wide(corrected.values)
+        else:
+            regional_bag = regional_bag_uncorrected.copy()
+
+        regional_contribution = _wide(contribution)
 
         logger.info("Multivariate BAG estimation complete.")
         return BAGResult(
@@ -294,4 +339,7 @@ class MultivariateRegionalBAGEstimator:
             predicted_age=predicted_age,
             region_metrics=region_metrics,
             config=cfg,
+            regional_bag=regional_bag,
+            regional_bag_uncorrected=regional_bag_uncorrected,
+            regional_contribution=regional_contribution,
         )

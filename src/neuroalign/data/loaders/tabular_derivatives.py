@@ -33,6 +33,12 @@ logger = logging.getLogger(__name__)
 
 _STRUCTURE_RE = re.compile(r"structure-([A-Za-z0-9]+)")
 
+# Anatomical (CAT12) labels carry a "<N>Networks_" prefix (e.g.
+# "7Networks_LH_Cont_Cing_1") that diffusion (QSIRecon) labels for the same
+# region lack (e.g. "LH_Cont_Cing_1"). Strip it so both modalities agree on
+# region names - otherwise each region gets loaded as two distinct columns.
+_NETWORK_PREFIX_RE = re.compile(r"^\d+Networks_")
+
 # Rows for the medial wall / unparcellated background - not real regions, and
 # absent from the diffusion atlases, so they're dropped on load.
 _BACKGROUND_LABELS = {"Background+FreeSurfer_Defined_Medial_Wall"}
@@ -152,6 +158,7 @@ class TabularDerivativesLoader:
                     continue
 
                 df = df[~df["label"].isin(_BACKGROUND_LABELS)].copy()
+                df["label"] = df["label"].str.replace(_NETWORK_PREFIX_RE, "", regex=True)
                 df.drop(columns=["subject_id"], errors="ignore", inplace=True)
                 df.insert(0, "session_id", session_id)
                 df.insert(0, "uid", uid)
