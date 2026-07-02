@@ -31,12 +31,13 @@ dependencies = [
     "python-dotenv>=1.0.0",
     "pydantic>=2.0.0",
     "pydantic-settings>=2.0.0",
-    "parcellate>=0.1.0",
     # File formats
     "pyarrow>=14.0.0",
     "statsmodels>=0.14.6",
-    "gam>=1.3.0",
-    "pygam>=0.12.0",
+    # Behavioral data + regional BAG modeling
+    "brainlink @ file:///home/galkepler/Projects/brainlink",
+    "regional-stacker @ file:///home/galkepler/Projects/regional-stacker",
+    "streamlit>=1.58.0",
 ]
 
 [project.optional-dependencies]
@@ -51,11 +52,6 @@ dev = [
     "jupyterlab>=4.0.0",
 ]
 
-parcellation = [
-    # Your custom parcellation package - update URL
-    # "parcellate @ git+https://github.com/your-username/parcellate.git",
-]
-
 app = [
     "fastapi>=0.104.0",
     "uvicorn[standard]>=0.24.0",
@@ -63,11 +59,14 @@ app = [
 ]
 
 all = [
-    "neuroalign[dev,parcellation,app]",
+    "neuroalign[dev,app]",
 ]
 
 [project.scripts]
 neuroalign-prepare = "neuroalign.data.preprocessing.cli:main"
+
+[tool.hatch.metadata]
+allow-direct-references = true
 
 [build-system]
 requires = ["hatchling"]

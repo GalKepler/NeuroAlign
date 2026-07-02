@@ -60,6 +60,7 @@ data/interim/
 *.h5
 *.hdf5
 *.npz
+*.parquet
 
 # But DO track data documentation
 !data/README.md

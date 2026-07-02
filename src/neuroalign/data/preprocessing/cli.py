@@ -13,12 +13,13 @@ from typing import Optional
 from dotenv import load_dotenv
 
 from neuroalign.data.preprocessing.config import (
-    PipelineConfig,
+    BAGEstimationConfig,
     DataPaths,
     ModalityConfig,
     OutputConfig,
+    PipelineConfig,
 )
-from neuroalign.data.preprocessing.pipeline import DataPreparationPipeline
+from neuroalign.data.preprocessing.pipeline import DataPreparationPipeline, PipelineResult
 
 # Load environment variables from .env file
 load_dotenv()
@@ -108,60 +109,39 @@ Examples:
   neuroalign-prepare
 
   # Full pipeline with explicit paths
-  neuroalign-prepare --sessions /path/to/sessions.csv \\
-      --cat12-root /path/to/cat12 \\
-      --atlas-root /path/to/atlases \\
-      --qsiparc /path/to/qsiparc \\
-      --qsirecon /path/to/qsirecon
+  neuroalign-prepare --brainlink-db /path/to/brainlink.db \\
+      --tabular-derivatives-root /path/to/derivatives/tabular
 
-  # Anatomical only
-  neuroalign-prepare --no-diffusion
+  # Anatomical only, restricted to a single lab
+  neuroalign-prepare --no-diffusion --labs TS
 
-  # Diffusion only with specific workflows
-  neuroalign-prepare --no-anatomical --workflows AMICONODDI DSIStudio
+  # Force a full reload of all sessions
+  neuroalign-prepare --force
 
 Environment variables (loaded from .env):
-  SESSIONS_CSV      - Path to sessions CSV
-  CAT12_ROOT        - Path to CAT12 derivatives
-  CAT12_ATLAS_ROOT  - Path to atlas directory
-  QSIPARC_PATH      - Path to QSIParc derivatives
-  QSIRECON_PATH     - Path to QSIRecon derivatives
-  ATLAS_NAME        - Atlas name (default: 4S456Parcels)
+  BRAINLINK_DB_PATH         - Path to the brainlink SQLite DB
+  TABULAR_DERIVATIVES_ROOT  - Root of the pre-parcellated tabular derivatives tree
+  ATLAS_NAME                - Atlas name (default: Schaefer2018N400n7Tian2020S2)
+  ANAT_ATLASES              - Comma-separated anatomical atlas folders
+                               (default: Schaefer2018N400n7,Tian2020S2)
+  SESSION_VARIANT           - Diffusion session variant: cross|plain|subject
+                               (default: cross)
         """,
     )
 
     # Path arguments (with env var defaults)
     paths_group = parser.add_argument_group("Data paths (override .env with CLI args)")
     paths_group.add_argument(
-        "--sessions",
-        "-s",
+        "--brainlink-db",
         type=Path,
-        default=_get_env_path("SESSIONS_CSV"),
-        help="Path to sessions CSV (env: SESSIONS_CSV)",
+        default=_get_env_path("BRAINLINK_DB_PATH"),
+        help="Path to the brainlink SQLite DB (env: BRAINLINK_DB_PATH)",
     )
     paths_group.add_argument(
-        "--cat12-root",
+        "--tabular-derivatives-root",
         type=Path,
-        default=_get_env_path("CAT12_ROOT"),
-        help="Path to CAT12 derivatives directory (env: CAT12_ROOT)",
-    )
-    paths_group.add_argument(
-        "--atlas-root",
-        type=Path,
-        default=_get_env_path("CAT12_ATLAS_ROOT"),
-        help="Path to atlas directory (env: CAT12_ATLAS_ROOT)",
-    )
-    paths_group.add_argument(
-        "--qsiparc",
-        type=Path,
-        default=_get_env_path("QSIPARC_PATH"),
-        help="Path to QSIParc derivatives directory (env: QSIPARC_PATH)",
-    )
-    paths_group.add_argument(
-        "--qsirecon",
-        type=Path,
-        default=_get_env_path("QSIRECON_PATH"),
-        help="Path to QSIRecon derivatives directory (env: QSIRECON_PATH)",
+        default=_get_env_path("TABULAR_DERIVATIVES_ROOT"),
+        help="Root of the pre-parcellated tabular derivatives tree (env: TABULAR_DERIVATIVES_ROOT)",
     )
     paths_group.add_argument(
         "--output",
@@ -183,26 +163,6 @@ Environment variables (loaded from .env):
         action="store_true",
         help="Disable diffusion data loading",
     )
-    modality_group.add_argument(
-        "--no-gm",
-        action="store_true",
-        help="Disable gray matter volume",
-    )
-    modality_group.add_argument(
-        "--no-wm",
-        action="store_true",
-        help="Disable white matter volume",
-    )
-    modality_group.add_argument(
-        "--no-ct",
-        action="store_true",
-        help="Disable cortical thickness",
-    )
-    modality_group.add_argument(
-        "--workflows",
-        nargs="+",
-        help="Specific diffusion workflows to include (default: all)",
-    )
 
     # Output options
     output_group = parser.add_argument_group("Output options")
@@ -221,20 +181,33 @@ Environment variables (loaded from .env):
     # General options
     parser.add_argument(
         "--atlas-name",
-        default=os.getenv("ATLAS_NAME", "4S456Parcels"),
-        help="Atlas name (env: ATLAS_NAME, default: 4S456Parcels)",
+        default=os.getenv("ATLAS_NAME", "Schaefer2018N400n7Tian2020S2"),
+        help="Atlas name (env: ATLAS_NAME, default: Schaefer2018N400n7Tian2020S2)",
     )
     parser.add_argument(
-        "--age-column",
-        default="AGE",
-        help="Column name for age in sessions CSV (default: AGE, also tries Age@Scan)",
+        "--anat-atlases",
+        default=os.getenv("ANAT_ATLASES", "Schaefer2018N400n7,Tian2020S2"),
+        help=(
+            "Comma-separated anatomical atlas folders, cortex first "
+            "(env: ANAT_ATLASES, default: Schaefer2018N400n7,Tian2020S2)"
+        ),
     )
     parser.add_argument(
-        "--n-jobs",
-        "-j",
-        type=int,
-        default=int(os.getenv("N_JOBS", "1")),
-        help="Number of parallel workers (env: N_JOBS, default: 1)",
+        "--session-variant",
+        choices=["cross", "plain", "subject"],
+        default=os.getenv("SESSION_VARIANT", "cross"),
+        help="Diffusion session variant (env: SESSION_VARIANT, default: cross)",
+    )
+    parser.add_argument(
+        "--labs",
+        nargs="+",
+        default=None,
+        help="Restrict to these brainlink labs (default: all)",
+    )
+    parser.add_argument(
+        "--allow-incomplete-mapping",
+        action="store_true",
+        help="Include sessions without a complete subject_code/uid mapping in brainlink",
     )
     parser.add_argument(
         "--verbose",
@@ -254,15 +227,101 @@ Environment variables (loaded from .env):
         ),
     )
     parser.add_argument(
-        "--no-progress",
-        action="store_true",
-        help="Disable progress bars",
-    )
-    parser.add_argument(
         "--force",
         "-f",
         action="store_true",
         help="Force reload all sessions (ignore existing data in store)",
+    )
+
+    # BAG estimation
+    bag_group = parser.add_argument_group("Regional Brain Age Gap (BAG) estimation")
+    bag_group.add_argument(
+        "--run-bag-estimation",
+        action="store_true",
+        help="Run regional BAG estimation after building the feature store",
+    )
+    bag_group.add_argument(
+        "--bag-univariate-features",
+        nargs="+",
+        default=None,
+        metavar="FEATURE",
+        help=(
+            "Wide-format feature names for per-region univariate BAG estimation "
+            "(default: anat_thickness_mean_mm)"
+        ),
+    )
+    bag_group.add_argument(
+        "--bag-multivariate-features",
+        nargs="+",
+        default=None,
+        metavar="FEATURE1,FEATURE2,...",
+        help=(
+            "Comma-separated wide-format feature combinations for multivariate BAG "
+            "estimation. Repeat to run multiple combinations, "
+            "e.g. --bag-multivariate-features anat_thickness_mean_mm,DSIStudio_tensor_fa_mean"
+        ),
+    )
+    bag_group.add_argument(
+        "--bag-model-type",
+        choices=["ridge", "xgboost", "lightgbm"],
+        default="ridge",
+        help="Base model type for BAG estimation (default: ridge)",
+    )
+    bag_group.add_argument(
+        "--bag-n-splits",
+        type=int,
+        default=5,
+        help="Number of GroupKFold splits for BAG estimation (default: 5)",
+    )
+    bag_group.add_argument(
+        "--bag-n-jobs",
+        type=int,
+        default=1,
+        help="Parallel region fitting for BAG estimation, -1 for all cores (default: 1)",
+    )
+    bag_group.add_argument(
+        "--bag-no-bias-correction",
+        action="store_true",
+        help="Disable post-hoc BAG bias correction",
+    )
+    bag_group.add_argument(
+        "--bag-no-ipw",
+        action="store_true",
+        help="Disable inverse probability weighting in BAG estimation",
+    )
+    bag_group.add_argument(
+        "--bag-all-univariate",
+        action="store_true",
+        help=(
+            "Run univariate BAG estimation for every wide-format feature in the store. "
+            "Overrides --bag-univariate-features."
+        ),
+    )
+    bag_group.add_argument(
+        "--bag-all-multivariate",
+        action="store_true",
+        help=(
+            "Run one multivariate BAG estimation combining all wide-format features in the store. "
+            "Diffusion filtered to --bag-multivariate-diffusion-metric (default: robust_mean). "
+            "Anatomical restricted to anat_volume_mm3 (TIV-normalised) and anat_thickness_mean_mm. "
+            "Overrides --bag-multivariate-features."
+        ),
+    )
+    bag_group.add_argument(
+        "--bag-multivariate-diffusion-metric",
+        default="robust_mean",
+        metavar="METRIC",
+        help="Diffusion aggregation to use with --bag-all-multivariate (default: robust_mean)",
+    )
+    bag_group.add_argument(
+        "--bag-multivariate-tiv-normalize",
+        nargs="+",
+        default=None,
+        metavar="FEATURE",
+        help=(
+            "Feature names to divide by TIV before multivariate BAG estimation "
+            "(default when --bag-all-multivariate: anat_volume_mm3)"
+        ),
     )
 
     return parser.parse_args()
@@ -271,21 +330,14 @@ Environment variables (loaded from .env):
 def build_config(args: argparse.Namespace) -> PipelineConfig:
     """Build pipeline configuration from CLI arguments."""
     paths = DataPaths(
-        sessions_csv=args.sessions,
-        cat12_root=args.cat12_root,
-        atlas_root=args.atlas_root,
-        qsiparc_path=args.qsiparc,
-        qsirecon_path=args.qsirecon,
+        brainlink_db=args.brainlink_db,
+        tabular_derivatives_root=args.tabular_derivatives_root,
         output_dir=args.output,
     )
 
     modalities = ModalityConfig(
         anatomical=not args.no_anatomical,
         diffusion=not args.no_diffusion,
-        gray_matter=not args.no_gm,
-        white_matter=not args.no_wm,
-        cortical_thickness=not args.no_ct,
-        diffusion_workflows=args.workflows,
     )
 
     output = OutputConfig(
@@ -293,16 +345,132 @@ def build_config(args: argparse.Namespace) -> PipelineConfig:
         compression=args.compression if args.compression != "none" else None,
     )
 
+    anat_atlases = tuple(a.strip() for a in args.anat_atlases.split(","))
+
+    bag_kwargs = {
+        "enabled": args.run_bag_estimation,
+        "model_type": args.bag_model_type,
+        "n_splits": args.bag_n_splits,
+        "n_jobs": args.bag_n_jobs,
+        "bias_correction": not args.bag_no_bias_correction,
+        "ipw": not args.bag_no_ipw,
+    }
+    if getattr(args, "bag_all_univariate", False) or getattr(args, "bag_all_multivariate", False):
+        from neuroalign.data.preprocessing.feature_store import FeatureStore
+        _store = FeatureStore(args.output)
+        all_features = _store.list_features()
+        if not all_features:
+            flag = "--bag-all-univariate" if getattr(args, "bag_all_univariate", False) else "--bag-all-multivariate"
+            raise ValueError(
+                f"{flag}: no features found in store at "
+                f"{args.output}. Run the pipeline first to build the feature store."
+            )
+        if getattr(args, "bag_all_univariate", False):
+            bag_kwargs["univariate_features"] = all_features
+        if getattr(args, "bag_all_multivariate", False):
+            diff_metric = getattr(args, "bag_multivariate_diffusion_metric", "robust_mean")
+            diff_features = [
+                name for name in all_features
+                if (info := _store.get_feature_info(name))
+                and info.modality == "diffusion"
+                and info.metric == diff_metric
+            ]
+            _anat_wanted = ["anat_volume_mm3", "anat_thickness_mean_mm"]
+            anat_features = [f for f in _anat_wanted if f in all_features]
+            bag_kwargs["multivariate_feature_sets"] = [anat_features + diff_features]
+            tiv_norm = getattr(args, "bag_multivariate_tiv_normalize", None)
+            if tiv_norm is None:
+                tiv_norm = [f for f in ["anat_volume_mm3"] if f in all_features]
+            bag_kwargs["multivariate_tiv_normalize"] = tiv_norm
+    else:
+        if args.bag_univariate_features is not None:
+            bag_kwargs["univariate_features"] = args.bag_univariate_features
+        if args.bag_multivariate_features is not None:
+            bag_kwargs["multivariate_feature_sets"] = [
+                combo.split(",") for combo in args.bag_multivariate_features
+            ]
+        if getattr(args, "bag_multivariate_tiv_normalize", None) is not None:
+            bag_kwargs["multivariate_tiv_normalize"] = args.bag_multivariate_tiv_normalize
+    bag_estimation = BAGEstimationConfig(**bag_kwargs)
+
     return PipelineConfig(
         paths=paths,
         modalities=modalities,
         output=output,
+        bag_estimation=bag_estimation,
         atlas_name=args.atlas_name,
-        age_column=args.age_column,
-        n_jobs=args.n_jobs,
-        progress=not args.no_progress,
+        anat_atlases=anat_atlases,
+        session_variant=args.session_variant,
+        labs=args.labs,
+        require_complete_mapping=not args.allow_incomplete_mapping,
         force=args.force,
     )
+
+
+def _print_wide_features(result: PipelineResult) -> None:
+    """Print the generated wide-format feature breakdown."""
+    print()
+    print(f"Wide feature types: {result.metadata['n_wide_features']}")
+    anat_feats = result.metadata.get("anatomical_features", [])
+    diff_feats = result.metadata.get("diffusion_features", [])
+    print(f"  Anatomical: {len(anat_feats)}")
+    for feat in anat_feats:
+        print(f"    - {feat}")
+    print(f"  Diffusion: {len(diff_feats)}")
+    for feat in diff_feats:
+        print(f"    - {feat}")
+
+
+def _print_summary(result: PipelineResult, log_path: Optional[Path]) -> None:
+    """Print a human-readable summary of a `PipelineResult`."""
+    print("\n" + "=" * 60)
+    print("DATA PREPARATION COMPLETE")
+    print("=" * 60)
+    print(f"Output directory: {result.output_path}")
+    print(f"Total sessions in store: {result.metadata['n_sessions']}")
+    print(f"Unique subjects: {result.metadata['n_subjects']}")
+
+    # Show incremental loading stats
+    if result.n_skipped_sessions > 0 or result.n_new_sessions > 0:
+        print()
+        print(f"This run: {result.n_new_sessions} new sessions loaded")
+        if result.n_skipped_sessions > 0:
+            print(f"          {result.n_skipped_sessions} sessions already in store (skipped)")
+
+    print()
+    print(f"Long formats saved: {len(result.long_formats_saved)}")
+    for fmt in result.long_formats_saved:
+        print(f"  - {fmt}")
+
+    _print_wide_features(result)
+
+    age_stats = result.metadata["age_stats"]
+    if age_stats["min"] is not None:
+        print()
+        print(
+            f"Age range: {age_stats['min']:.1f} - {age_stats['max']:.1f} "
+            f"(mean: {age_stats['mean']:.1f})"
+        )
+        if age_stats["missing"] > 0:
+            print(f"  Missing age: {age_stats['missing']} sessions")
+
+    if result.bag_results_saved:
+        print()
+        print("BAG estimation results saved:")
+        for bag_path in result.bag_results_saved:
+            print(f"  - {bag_path}")
+
+    if log_path:
+        print()
+        print(f"Detailed log saved to: {log_path}")
+
+    print()
+    print("Usage example:")
+    print("  from neuroalign.data.preprocessing import FeatureStore")
+    print(f"  store = FeatureStore('{result.output_path}')")
+    print("  meta = store.load_metadata()")
+    print("  thickness = store.load_feature('anat_thickness_mean_mm')")
+    print("=" * 60)
 
 
 def main() -> int:
@@ -320,9 +488,16 @@ def main() -> int:
             logger.debug(f"  {arg}: {value}")
 
     # Validate required arguments
-    if args.sessions is None:
+    if args.brainlink_db is None:
         logger.error(
-            "Sessions CSV is required. Provide via --sessions or set SESSIONS_CSV in .env"
+            "Brainlink DB path is required. "
+            "Provide via --brainlink-db or set BRAINLINK_DB_PATH in .env"
+        )
+        return 1
+    if args.tabular_derivatives_root is None:
+        logger.error(
+            "Tabular derivatives root is required. "
+            "Provide via --tabular-derivatives-root or set TABULAR_DERIVATIVES_ROOT in .env"
         )
         return 1
 
@@ -334,64 +509,15 @@ def main() -> int:
         logger.debug(f"  Paths: {config.paths}")
         logger.debug(f"  Modalities: {config.modalities}")
         logger.debug(f"  Output: {config.output}")
-        logger.debug(f"  Atlas: {config.atlas_name}")
-        logger.debug(f"  N jobs: {config.n_jobs}")
+        logger.debug(f"  Atlas: {config.atlas_name} ({config.anat_atlases})")
+        logger.debug(f"  Session variant: {config.session_variant}")
+        logger.debug(f"  Labs: {config.labs}")
+        logger.debug(f"  BAG estimation: {config.bag_estimation}")
 
         pipeline = DataPreparationPipeline(config)
         result = pipeline.run()
 
-        # Print summary
-        print("\n" + "=" * 60)
-        print("DATA PREPARATION COMPLETE")
-        print("=" * 60)
-        print(f"Output directory: {result.output_path}")
-        print(f"Total sessions in store: {result.metadata['n_sessions']}")
-        print(f"Unique subjects: {result.metadata['n_subjects']}")
-
-        # Show incremental loading stats
-        if result.n_skipped_sessions > 0 or result.n_new_sessions > 0:
-            print()
-            print(f"This run: {result.n_new_sessions} new sessions loaded")
-            if result.n_skipped_sessions > 0:
-                print(f"          {result.n_skipped_sessions} sessions already in store (skipped)")
-
-        print()
-        print(f"Long formats saved: {len(result.long_formats_saved)}")
-        for fmt in result.long_formats_saved:
-            print(f"  - {fmt}")
-
-        print()
-        print(f"Wide feature types: {result.metadata['n_wide_features']}")
-        anat_feats = result.metadata.get("anatomical_features", [])
-        diff_feats = result.metadata.get("diffusion_features", [])
-        print(f"  Anatomical: {len(anat_feats)}")
-        for feat in anat_feats:
-            print(f"    - {feat}")
-        print(f"  Diffusion: {len(diff_feats)}")
-        for feat in diff_feats:
-            print(f"    - {feat}")
-
-        if result.metadata["age_stats"]["min"] is not None:
-            print()
-            print(
-                f"Age range: {result.metadata['age_stats']['min']:.1f} - "
-                f"{result.metadata['age_stats']['max']:.1f} "
-                f"(mean: {result.metadata['age_stats']['mean']:.1f})"
-            )
-            if result.metadata["age_stats"]["missing"] > 0:
-                print(f"  Missing age: {result.metadata['age_stats']['missing']} sessions")
-
-        if log_path:
-            print()
-            print(f"Detailed log saved to: {log_path}")
-
-        print()
-        print("Usage example:")
-        print("  from neuroalign.data.preprocessing import FeatureStore")
-        print(f"  store = FeatureStore('{result.output_path}')")
-        print("  gm = store.load_feature('gm_volume')")
-        print("  multi = store.load_features(['gm_volume', 'ct_thickness'])")
-        print("=" * 60)
+        _print_summary(result, log_path)
 
         logger.debug("Pipeline completed successfully")
         return 0
